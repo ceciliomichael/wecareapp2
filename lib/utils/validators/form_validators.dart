@@ -20,9 +20,14 @@ class FormValidators {
     if (value == null || value.isEmpty) {
       return 'Please enter your phone number';
     }
-    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+    
+    // Remove any non-digit characters
+    String digitsOnly = value.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (digitsOnly.length != 10) {
       return 'Please enter a valid 10-digit phone number';
     }
+    
     return null;
   }
 

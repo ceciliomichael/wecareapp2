@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../widgets/forms/email_phone_text_field.dart';
 import '../widgets/forms/custom_text_field.dart';
 import '../utils/validators/login_validators.dart';
+import '../services/employer_auth_service.dart';
+import '../services/helper_auth_service.dart';
+import '../services/supabase_service.dart';
+import '../services/session_service.dart';
 import 'employer_register_screen.dart';
 import 'helper_register_screen.dart';
 import 'employer_dashboard_screen.dart';
@@ -26,10 +30,17 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
   Color get _themeColor => widget.userType == 'Employer' 
       ? const Color(0xFF1565C0) 
       : const Color(0xFFFF8A50);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedData();
+  }
 
   @override
   void dispose() {
@@ -38,25 +49,106 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // Navigate to appropriate dashboard based on user type
+  Future<void> _loadRememberedData() async {
+    final isRememberMeEnabled = await SessionService.isRememberMeEnabled();
+    final rememberedEmailOrPhone = await SessionService.getRememberedEmailOrPhone();
+    
+    if (isRememberMeEnabled && rememberedEmailOrPhone != null) {
+      setState(() {
+        _rememberMe = true;
+        _emailPhoneController.text = rememberedEmailOrPhone;
+      });
+    }
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // Check if Supabase is initialized
+    if (!SupabaseService.isInitialized) {
+      _showErrorMessage('Database connection not available. Please check your configuration.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      Map<String, dynamic> result;
+      
       if (widget.userType == 'Employer') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const EmployerDashboardScreen(),
-          ),
+        result = await EmployerAuthService.loginEmployer(
+          emailOrPhone: _emailPhoneController.text.trim(),
+          password: _passwordController.text,
         );
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HelperDashboardScreen(),
-          ),
+        result = await HelperAuthService.loginHelper(
+          emailOrPhone: _emailPhoneController.text.trim(),
+          password: _passwordController.text,
         );
       }
+
+      if (!mounted) return;
+
+      if (result['success']) {
+        // Save login session
+        final userData = widget.userType == 'Employer' 
+            ? result['employer'].toMap() 
+            : result['helper'].toMap();
+        
+        await SessionService.saveLoginSession(
+          userType: widget.userType,
+          userId: userData['id'],
+          userData: userData,
+          rememberMe: _rememberMe,
+          emailOrPhone: _rememberMe ? _emailPhoneController.text.trim() : null,
+        );
+
+        if (!mounted) return;
+        // Login successful
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to appropriate dashboard
+        if (widget.userType == 'Employer') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EmployerDashboardScreen(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HelperDashboardScreen(),
+            ),
+          );
+        }
+      } else {
+        // Login failed
+        _showErrorMessage(result['message']);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorMessage('Login failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _forgotPassword() {
@@ -188,6 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     EmailPhoneTextField(
                       controller: _emailPhoneController,
                       validator: LoginValidators.validateEmailOrPhone,
+                      themeColor: _themeColor,
                     ),
 
                     // Password Field
@@ -260,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _login,
+                        onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _themeColor,
                           foregroundColor: Colors.white,
@@ -270,14 +363,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                       ),
                     ),
 

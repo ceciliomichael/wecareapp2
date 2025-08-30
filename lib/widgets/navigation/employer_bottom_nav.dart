@@ -82,6 +82,7 @@ class EmployerBottomNav extends StatelessWidget {
               ),
               label: 'Applications',
             ),
+
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 4),

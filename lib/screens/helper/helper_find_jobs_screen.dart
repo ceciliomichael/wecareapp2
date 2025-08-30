@@ -226,65 +226,76 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: const Color(0xFFFF8A50).withValues(alpha: 0.2),
-                  width: 2,
+    Widget _buildEmptyState() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFFFF8A50).withValues(alpha: 0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.work_outline,
+                        size: 60,
+                        color: Color(0xFFFF8A50),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const Text(
+                      'No Jobs Available',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        'New job opportunities will appear here when employers post them. Check back regularly!',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF6B7280),
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Column(
+                      children: [
+                        _buildTipItem(Icons.notifications_outlined, 'Enable notifications for new jobs'),
+                        const SizedBox(height: 12),
+                        _buildTipItem(Icons.star_outline, 'Complete your profile to match better'),
+                        const SizedBox(height: 12),
+                        _buildTipItem(Icons.refresh, 'Refresh regularly for new opportunities'),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              child: const Icon(
-                Icons.work_outline,
-                size: 60,
-                color: Color(0xFFFF8A50),
-              ),
             ),
-            const SizedBox(height: 32),
-            const Text(
-              'No Jobs Available',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'New job opportunities will appear here when employers post them. Check back regularly!',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Column(
-              children: [
-                _buildTipItem(Icons.notifications_outlined, 'Enable notifications for new jobs'),
-                const SizedBox(height: 12),
-                _buildTipItem(Icons.star_outline, 'Complete your profile to match better'),
-                const SizedBox(height: 12),
-                _buildTipItem(Icons.refresh, 'Refresh regularly for new opportunities'),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -371,34 +382,48 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
               child: _allJobs.isEmpty
                   ? _buildEmptyState()
                   : _filteredJobs.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'No jobs match your filters',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF6B7280),
+                      ? LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search_off,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          'No jobs match your filters',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF6B7280),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text(
+                                          'Try adjusting your search criteria',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF9CA3AF),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Try adjusting your search criteria',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF9CA3AF),
-                                ),
-                              ),
-                            ],
-                          ),
+                            );
+                          },
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 24),

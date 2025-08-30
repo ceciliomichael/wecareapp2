@@ -4,15 +4,20 @@ class LoginValidators {
       return 'Please enter your email or phone number';
     }
 
-    // Check if it's a phone number format
+    // Check if it's a phone number format (starts with +63)
     if (value.startsWith('+63')) {
-      if (!RegExp(r'^\+63\s?\d{10}$').hasMatch(value.replaceAll(' ', ''))) {
-        return 'Please enter a valid phone number';
+      final phoneNumber = value.substring(3); // Remove +63 prefix
+      
+      // Remove any non-digit characters from phone number
+      final digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+      
+      if (digitsOnly.length != 10) {
+        return 'Please enter a valid 10-digit phone number';
       }
       return null;
     }
 
-    // Check if it's an email format
+    // Check if it's an email format (contains @)
     if (value.contains('@')) {
       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
         return 'Please enter a valid email address';
@@ -20,9 +25,10 @@ class LoginValidators {
       return null;
     }
 
-    // If it's all digits, assume it's a phone number without +63
-    if (RegExp(r'^\d{10}$').hasMatch(value)) {
-      return 'Please include +63 before your phone number';
+    // If it's just digits (without +63), check if it's 10 digits
+    final digitsOnly = value.replaceAll(RegExp(r'[^\d]'), '');
+    if (digitsOnly.length == 10 && digitsOnly == value) {
+      return 'Phone number should include +63 prefix';
     }
 
     return 'Please enter a valid email or phone number';

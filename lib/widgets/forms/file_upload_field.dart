@@ -48,7 +48,7 @@ class FileUploadField extends StatelessWidget {
                 Icon(
                   fileName != null 
                       ? Icons.check_circle 
-                      : Icons.upload_file,
+                      : Icons.image_outlined,
                   color: fileName != null 
                       ? const Color(0xFF4CAF50) 
                       : const Color(0xFF9E9E9E),

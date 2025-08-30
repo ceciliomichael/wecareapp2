@@ -1,13 +1,80 @@
 import 'package:flutter/material.dart';
 import '../../models/job_posting.dart';
 import '../../models/helper_service.dart';
+import '../../services/subscription_service.dart';
+import '../../services/messaging_service.dart';
 import '../../widgets/cards/job_posting_card.dart';
 import '../../widgets/cards/helper_service_card.dart';
 import '../../widgets/buttons/post_job_button.dart';
 import '../../widgets/common/section_header.dart';
+import '../../widgets/subscription/subscription_status_banner.dart';
+import '../employer/employer_subscription_screen.dart';
+import '../messaging/conversations_screen.dart';
 
-class EmployerHomeScreen extends StatelessWidget {
+class EmployerHomeScreen extends StatefulWidget {
   const EmployerHomeScreen({super.key});
+
+  @override
+  State<EmployerHomeScreen> createState() => _EmployerHomeScreenState();
+}
+
+class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
+  Map<String, dynamic>? _subscriptionStatus;
+  int _unreadMessageCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubscriptionStatus();
+    _loadUnreadMessageCount();
+  }
+
+  Future<void> _loadSubscriptionStatus() async {
+    try {
+      final status = await SubscriptionService.getCurrentUserSubscriptionStatus();
+      if (mounted) {
+        setState(() {
+          _subscriptionStatus = status;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadUnreadMessageCount() async {
+    try {
+      final count = await MessagingService.getTotalUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadMessageCount = count;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  void _onSubscriptionTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EmployerSubscriptionScreen(),
+      ),
+    );
+  }
+
+  void _onMessagesTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ConversationsScreen(),
+      ),
+    ).then((_) {
+      // Refresh unread count when returning
+      _loadUnreadMessageCount();
+    });
+  }
 
   void _onPostJob(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -106,9 +173,67 @@ class EmployerHomeScreen extends StatelessWidget {
                 ),
               ),
 
+              // Subscription Status Banner
+              if (_subscriptionStatus != null)
+                SubscriptionStatusBanner(
+                  subscriptionStatus: _subscriptionStatus!,
+                  onTap: _onSubscriptionTap,
+                ),
+
               // Post Job Button
               PostJobButton(
                 onPressed: () => _onPostJob(context),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Quick Actions Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: SectionHeader(
+                  title: 'Quick Actions',
+                  subtitle: 'Manage your employer account',
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Quick Action Cards
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        context,
+                        'Messages',
+                        'Chat with helpers',
+                        Icons.chat_bubble_outline,
+                        const Color(0xFF1565C0),
+                        _onMessagesTap,
+                        badgeCount: _unreadMessageCount,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        context,
+                        'Analytics',
+                        'View job statistics',
+                        Icons.analytics_outlined,
+                        const Color(0xFF10B981),
+                        () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Analytics - Coming Soon'),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 32),
@@ -284,6 +409,100 @@ class EmployerHomeScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap, {
+    int? badgeCount,
+  }) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(16),
+      shadowColor: color.withValues(alpha: 0.2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            border: Border.all(
+              color: color.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: color,
+                    ),
+                  ),
+                  if (badgeCount != null && badgeCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          badgeCount > 99 ? '99+' : badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6B7280),
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

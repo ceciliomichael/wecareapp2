@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
+import 'services/supabase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Supabase
+  try {
+    await SupabaseService.initialize();
+    debugPrint('✅ Supabase initialized successfully');
+  } catch (e) {
+    debugPrint('❌ Failed to initialize Supabase: $e');
+    // Continue running the app even if Supabase fails to initialize
+    // The app will handle this gracefully in the authentication flows
+  }
+  
   runApp(const WeCareApp());
 }
 
@@ -12,29 +25,16 @@ class WeCareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'WeCare',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF1E88E5),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E88E5),
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1E88E5),
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF1565C0),
+        // Add Material Design 3 color scheme
+        brightness: Brightness.light,
       ),
       home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
+      // Add global navigation key for potential future use
+      navigatorKey: GlobalKey<NavigatorState>(),
     );
   }
 }

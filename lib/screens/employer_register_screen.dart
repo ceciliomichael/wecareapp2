@@ -8,6 +8,9 @@ import '../widgets/common/section_header.dart';
 import '../utils/constants/barangay_constants.dart';
 import '../utils/validators/form_validators.dart';
 import '../services/file_picker_service.dart';
+import '../services/employer_auth_service.dart';
+import '../services/supabase_service.dart';
+import 'employer_dashboard_screen.dart';
 
 class EmployerRegisterScreen extends StatefulWidget {
   const EmployerRegisterScreen({super.key});
@@ -27,9 +30,11 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
   
   String? _selectedBarangay;
   String? _barangayClearanceFileName;
+  String? _barangayClearanceBase64;
   bool _agreeToTerms = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -44,11 +49,13 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
 
   Future<void> _pickBarangayClearance() async {
     try {
-      final fileName = await FilePickerService.pickDocument();
-      if (fileName != null) {
-        if (!mounted) return;
+      // Get both filename and base64 data in single call
+      final result = await FilePickerService.pickImageWithBase64();
+      
+      if (result != null && mounted) {
         setState(() {
-          _barangayClearanceFileName = fileName;
+          _barangayClearanceFileName = result.fileName;
+          _barangayClearanceBase64 = result.base64Data;
         });
       }
     } catch (e) {
@@ -62,35 +69,88 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
     }
   }
 
-  void _register() {
-    if (_formKey.currentState!.validate()) {
-      if (_barangayClearanceFileName == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please upload your barangay clearance'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (!_agreeToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please agree to the terms of service and privacy policy'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    if (_selectedBarangay == null) {
+      _showErrorMessage('Please select your barangay');
+      return;
     }
+
+    if (_barangayClearanceBase64 == null) {
+      _showErrorMessage('Please upload your barangay clearance image');
+      return;
+    }
+
+    if (!_agreeToTerms) {
+      _showErrorMessage('Please agree to the terms of service and privacy policy');
+      return;
+    }
+
+    // Check if Supabase is initialized
+    if (!SupabaseService.isInitialized) {
+      _showErrorMessage('Database connection not available. Please check your configuration.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Format phone number to include +63 prefix
+      String phoneNumber = _phoneController.text.trim();
+      if (!phoneNumber.startsWith('+63')) {
+        phoneNumber = '+63$phoneNumber';
+      }
+
+      final result = await EmployerAuthService.registerEmployer(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: phoneNumber,
+        password: _passwordController.text,
+        barangay: _selectedBarangay!,
+        barangayClearanceBase64: _barangayClearanceBase64,
+      );
+
+      if (!mounted) return;
+
+      if (result['success']) {
+        // Registration successful
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to employer dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EmployerDashboardScreen(),
+          ),
+        );
+      } else {
+        // Registration failed
+        _showErrorMessage(result['message']);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorMessage('Registration failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -179,10 +239,10 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
               const SectionHeader(title: 'Required Documents'),
 
               FileUploadField(
-                label: 'Barangay Clearance',
+                label: 'Barangay Clearance Image',
                 fileName: _barangayClearanceFileName,
                 onTap: _pickBarangayClearance,
-                placeholder: 'Upload Barangay Clearance (PDF, JPG, PNG)',
+                placeholder: 'Upload Barangay Clearance Image (JPG, PNG)',
               ),
 
               // Security Section
@@ -235,7 +295,7 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _register,
+                  onPressed: _isLoading ? null : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1565C0),
                     foregroundColor: Colors.white,
@@ -244,13 +304,22 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Register as Employer',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Register as Employer',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

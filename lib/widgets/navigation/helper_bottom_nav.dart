@@ -82,6 +82,7 @@ class HelperBottomNav extends StatelessWidget {
               ),
               label: 'My Applications',
             ),
+
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
