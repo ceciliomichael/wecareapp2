@@ -165,199 +165,201 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: RefreshIndicator(
-        onRefresh: _loadCurrentHelper,
-        color: const Color(0xFFFF8A50),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF8A50),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF8A50).withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadCurrentHelper,
+          color: const Color(0xFFFF8A50),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF8A50),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF8A50).withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(40),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.handyman,
+                          size: 40,
+                          color: Color(0xFFFF8A50),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _currentHelper!.fullName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Helper',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Profile Information
+                _buildInfoSection(
+                  'Personal Information',
+                  [
+                    _buildInfoRow('First Name', _currentHelper!.firstName),
+                    _buildInfoRow('Last Name', _currentHelper!.lastName),
+                    _buildInfoRow('Email', _currentHelper!.email),
+                    _buildInfoRow('Phone', _currentHelper!.phone),
+                    _buildInfoRow('Barangay', _currentHelper!.barangay),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Skills & Experience Information
+                _buildInfoSection(
+                  'Skills & Experience',
+                  [
+                    _buildInfoRow('Primary Skill', _currentHelper!.skill),
+                    _buildInfoRow('Experience Level', _currentHelper!.experience),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Account Information
+                _buildInfoSection(
+                  'Account Information',
+                  [
+                    _buildInfoRow('Member Since', _formatDate(_currentHelper!.createdAt)),
+                    _buildInfoRow('Last Updated', _formatDate(_currentHelper!.updatedAt)),
+                    _buildInfoRow(
+                      'Verification Status', 
+                      _currentHelper!.isVerified ? 'Verified' : 'Pending',
+                      valueColor: _currentHelper!.isVerified ? Colors.green : Colors.orange,
                     ),
                   ],
                 ),
-                child: Column(
+
+                const SizedBox(height: 32),
+
+                // Action Buttons
+                Column(
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            spreadRadius: 2,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: _navigateToEditProfile,
+                        icon: const Icon(Icons.edit),
+                        label: const Text(
+                          'Edit Profile',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.handyman,
-                        size: 40,
-                        color: Color(0xFFFF8A50),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF8A50),
+                          side: const BorderSide(color: Color(0xFFFF8A50), width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      _currentHelper!.fullName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelperSubscriptionScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.credit_card),
+                        label: const Text(
+                          'Manage Subscription',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF8A50),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Helper',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout),
+                        label: const Text(
+                          'Logout',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 32),
-
-              // Profile Information
-              _buildInfoSection(
-                'Personal Information',
-                [
-                  _buildInfoRow('First Name', _currentHelper!.firstName),
-                  _buildInfoRow('Last Name', _currentHelper!.lastName),
-                  _buildInfoRow('Email', _currentHelper!.email),
-                  _buildInfoRow('Phone', _currentHelper!.phone),
-                  _buildInfoRow('Barangay', _currentHelper!.barangay),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Skills & Experience Information
-              _buildInfoSection(
-                'Skills & Experience',
-                [
-                  _buildInfoRow('Primary Skill', _currentHelper!.skill),
-                  _buildInfoRow('Experience Level', _currentHelper!.experience),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Account Information
-              _buildInfoSection(
-                'Account Information',
-                [
-                  _buildInfoRow('Member Since', _formatDate(_currentHelper!.createdAt)),
-                  _buildInfoRow('Last Updated', _formatDate(_currentHelper!.updatedAt)),
-                  _buildInfoRow(
-                    'Verification Status', 
-                    _currentHelper!.isVerified ? 'Verified' : 'Pending',
-                    valueColor: _currentHelper!.isVerified ? Colors.green : Colors.orange,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      onPressed: _navigateToEditProfile,
-                      icon: const Icon(Icons.edit),
-                      label: const Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFFF8A50),
-                        side: const BorderSide(color: Color(0xFFFF8A50), width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HelperSubscriptionScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.credit_card),
-                      label: const Text(
-                        'Manage Subscription',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF8A50),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

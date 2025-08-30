@@ -165,188 +165,190 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: RefreshIndicator(
-        onRefresh: _loadCurrentEmployer,
-        color: const Color(0xFF1565C0),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1565C0),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1565C0).withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadCurrentEmployer,
+          color: const Color(0xFF1565C0),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1565C0),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1565C0).withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(40),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Color(0xFF1565C0),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _currentEmployer!.fullName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Employer',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Profile Information
+                _buildInfoSection(
+                  'Personal Information',
+                  [
+                    _buildInfoRow('First Name', _currentEmployer!.firstName),
+                    _buildInfoRow('Last Name', _currentEmployer!.lastName),
+                    _buildInfoRow('Email', _currentEmployer!.email),
+                    _buildInfoRow('Phone', _currentEmployer!.phone),
+                    _buildInfoRow('Barangay', _currentEmployer!.barangay),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Account Information
+                _buildInfoSection(
+                  'Account Information',
+                  [
+                    _buildInfoRow('Member Since', _formatDate(_currentEmployer!.createdAt)),
+                    _buildInfoRow('Last Updated', _formatDate(_currentEmployer!.updatedAt)),
+                    _buildInfoRow(
+                      'Verification Status', 
+                      _currentEmployer!.isVerified ? 'Verified' : 'Pending',
+                      valueColor: _currentEmployer!.isVerified ? Colors.green : Colors.orange,
                     ),
                   ],
                 ),
-                child: Column(
+
+                const SizedBox(height: 32),
+
+                // Action Buttons
+                Column(
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            spreadRadius: 2,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: _navigateToEditProfile,
+                        icon: const Icon(Icons.edit),
+                        label: const Text(
+                          'Edit Profile',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Color(0xFF1565C0),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1565C0),
+                          side: const BorderSide(color: Color(0xFF1565C0), width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      _currentEmployer!.fullName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EmployerSubscriptionScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.credit_card),
+                        label: const Text(
+                          'Manage Subscription',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1565C0),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Employer',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout),
+                        label: const Text(
+                          'Logout',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 32),
-
-              // Profile Information
-              _buildInfoSection(
-                'Personal Information',
-                [
-                  _buildInfoRow('First Name', _currentEmployer!.firstName),
-                  _buildInfoRow('Last Name', _currentEmployer!.lastName),
-                  _buildInfoRow('Email', _currentEmployer!.email),
-                  _buildInfoRow('Phone', _currentEmployer!.phone),
-                  _buildInfoRow('Barangay', _currentEmployer!.barangay),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Account Information
-              _buildInfoSection(
-                'Account Information',
-                [
-                  _buildInfoRow('Member Since', _formatDate(_currentEmployer!.createdAt)),
-                  _buildInfoRow('Last Updated', _formatDate(_currentEmployer!.updatedAt)),
-                  _buildInfoRow(
-                    'Verification Status', 
-                    _currentEmployer!.isVerified ? 'Verified' : 'Pending',
-                    valueColor: _currentEmployer!.isVerified ? Colors.green : Colors.orange,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      onPressed: _navigateToEditProfile,
-                      icon: const Icon(Icons.edit),
-                      label: const Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1565C0),
-                        side: const BorderSide(color: Color(0xFF1565C0), width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const EmployerSubscriptionScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.credit_card),
-                      label: const Text(
-                        'Manage Subscription',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1565C0),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

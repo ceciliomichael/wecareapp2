@@ -102,30 +102,32 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         elevation: 0,
         shadowColor: Colors.black12,
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : _conversations.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadConversations,
-                  child: ListView.builder(
-                    itemCount: _conversations.length,
-                    itemBuilder: (context, index) {
-                      final conversation = _conversations[index];
-                      return ConversationCard(
-                        conversation: conversation,
-                        currentUserId: _currentUserId!,
-                        onTap: () async {
-                          await _navigateToChat(conversation);
-                          // Hard refresh after returning to ensure badges clear immediately
-                          _loadConversations();
-                        },
-                      );
-                    },
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : _conversations.isEmpty
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                    onRefresh: _loadConversations,
+                    child: ListView.builder(
+                      itemCount: _conversations.length,
+                      itemBuilder: (context, index) {
+                        final conversation = _conversations[index];
+                        return ConversationCard(
+                          conversation: conversation,
+                          currentUserId: _currentUserId!,
+                          onTap: () async {
+                            await _navigateToChat(conversation);
+                            // Hard refresh after returning to ensure badges clear immediately
+                            _loadConversations();
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
+      ),
     );
   }
 
