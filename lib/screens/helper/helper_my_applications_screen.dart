@@ -10,7 +10,7 @@ class HelperMyApplicationsScreen extends StatefulWidget {
 }
 
 class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen> {
-  List<HelperApplication> _applications = [];
+  final List<HelperApplication> _applications = [];
   String _selectedFilter = 'all'; // 'all', 'pending', 'accepted', 'rejected'
 
   void _onApplicationTap(HelperApplication application) {
@@ -308,7 +308,7 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No ${_selectedFilter} applications',
+                                'No $_selectedFilter applications',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,

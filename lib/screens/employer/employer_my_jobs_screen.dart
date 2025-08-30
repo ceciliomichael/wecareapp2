@@ -10,7 +10,7 @@ class EmployerMyJobsScreen extends StatefulWidget {
 }
 
 class _EmployerMyJobsScreenState extends State<EmployerMyJobsScreen> {
-  List<JobPosting> _jobPostings = [];
+  final List<JobPosting> _jobPostings = [];
 
   void _onPostJob() {
     ScaffoldMessenger.of(context).showSnackBar(

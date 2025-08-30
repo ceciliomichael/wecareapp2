@@ -10,7 +10,7 @@ class EmployerApplicationsScreen extends StatefulWidget {
 }
 
 class _EmployerApplicationsScreenState extends State<EmployerApplicationsScreen> {
-  List<Application> _applications = [];
+  final List<Application> _applications = [];
   String _selectedFilter = 'all'; // 'all', 'pending', 'accepted', 'rejected'
 
   void _onApplicationTap(Application application) {
@@ -293,7 +293,7 @@ class _EmployerApplicationsScreenState extends State<EmployerApplicationsScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No ${_selectedFilter} applications',
+                                'No $_selectedFilter applications',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
