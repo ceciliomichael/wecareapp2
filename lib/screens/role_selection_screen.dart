@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'employer_register_screen.dart';
+import 'helper_register_screen.dart';
+import 'login_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -205,10 +207,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Login as $role - Coming Soon'),
-                      backgroundColor: const Color(0xFF1E88E5),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginScreen(userType: role),
                     ),
                   );
                 },
@@ -246,10 +248,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Helper registration - Coming Soon'),
-                        backgroundColor: Color(0xFFFF8A50),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelperRegisterScreen(),
                       ),
                     );
                   }

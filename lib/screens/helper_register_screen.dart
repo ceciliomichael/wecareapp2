@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import '../widgets/forms/custom_text_field.dart';
 import '../widgets/forms/phone_text_field.dart';
+import '../widgets/forms/skills_dropdown.dart';
+import '../widgets/forms/experience_dropdown.dart';
 import '../widgets/forms/barangay_dropdown.dart';
 import '../widgets/forms/file_upload_field.dart';
 import '../widgets/forms/terms_agreement_checkbox.dart';
 import '../widgets/common/section_header.dart';
+import '../utils/constants/helper_constants.dart';
 import '../utils/constants/barangay_constants.dart';
 import '../utils/validators/form_validators.dart';
 import '../services/file_picker_service.dart';
 
-class EmployerRegisterScreen extends StatefulWidget {
-  const EmployerRegisterScreen({super.key});
+class HelperRegisterScreen extends StatefulWidget {
+  const HelperRegisterScreen({super.key});
 
   @override
-  State<EmployerRegisterScreen> createState() => _EmployerRegisterScreenState();
+  State<HelperRegisterScreen> createState() => _HelperRegisterScreenState();
 }
 
-class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
+class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -25,6 +28,8 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
+  String? _selectedSkill;
+  String? _selectedExperience;
   String? _selectedBarangay;
   String? _barangayClearanceFileName;
   bool _agreeToTerms = false;
@@ -64,6 +69,36 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
 
   void _register() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedSkill == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your primary skill'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedExperience == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your years of experience'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_selectedBarangay == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select your barangay'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       if (_barangayClearanceFileName == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -110,15 +145,15 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
               onTap: () => Navigator.pop(context),
               child: const Padding(
                 padding: EdgeInsets.all(12),
-                child: Icon(Icons.arrow_back, color: Color(0xFF1565C0)),
+                child: Icon(Icons.arrow_back, color: Color(0xFFFF8A50)),
               ),
             ),
           ),
         ),
         title: const Text(
-          'Employer Registration',
+          'Helper Registration',
           style: TextStyle(
-            color: Color(0xFF1565C0),
+            color: Color(0xFFFF8A50),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -160,6 +195,29 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
               PhoneTextField(
                 controller: _phoneController,
                 validator: FormValidators.validatePhoneNumber,
+              ),
+
+              // Skills & Experience Section
+              const SectionHeader(title: 'Skills & Experience'),
+
+              SkillsDropdown(
+                selectedSkill: _selectedSkill,
+                skillsList: HelperConstants.skills,
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedSkill = value;
+                  });
+                },
+              ),
+
+              ExperienceDropdown(
+                selectedExperience: _selectedExperience,
+                experienceList: HelperConstants.experienceLevels,
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedExperience = value;
+                  });
+                },
               ),
 
               // Location Section
@@ -237,7 +295,7 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
                 child: ElevatedButton(
                   onPressed: _register,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
+                    backgroundColor: const Color(0xFFFF8A50),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -245,7 +303,7 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
                     ),
                   ),
                   child: const Text(
-                    'Register as Employer',
+                    'Register as Helper',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
