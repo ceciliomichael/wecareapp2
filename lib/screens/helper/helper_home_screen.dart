@@ -39,6 +39,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
     _loadCurrentHelper();
     _loadSubscriptionStatus();
     _loadUnreadMessageCount();
+    _loadMatchedJobs(); // Load all job opportunities
   }
 
   Future<void> _loadCurrentHelper() async {
@@ -48,7 +49,6 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
         setState(() {
           _currentHelper = helper;
         });
-        _loadMatchedJobs();
         _loadMyServices();
       }
     } catch (e) {
@@ -57,18 +57,15 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
   }
 
   Future<void> _loadMatchedJobs() async {
-    if (_currentHelper == null) return;
-    
     setState(() {
       _isLoadingJobs = true;
     });
 
     try {
-      final jobs = await JobPostingService.getMatchedJobsForHelper(
-        helperSkills: _currentHelper!.skill,
-        helperBarangay: _currentHelper!.barangay,
-        limit: 2,
-      );
+      final allJobs = await JobPostingService.getActiveJobPostings();
+      
+      // Take only the first 2 jobs for the home screen
+      final jobs = allJobs.take(2).toList();
       
       if (mounted) {
         setState(() {
@@ -149,6 +146,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/conversations'),
         builder: (context) => const ConversationsScreen(),
       ),
     ).then((_) {
@@ -186,7 +184,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
     if (result == true) {
       if (mounted) {
         // Application submitted successfully
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(this.context).showSnackBar(
           const SnackBar(
             content: Text('Application submitted successfully!'),
             backgroundColor: Color(0xFF10B981),
@@ -222,7 +220,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
 
     if (result == 'deleted') {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(this.context).showSnackBar(
           const SnackBar(
             content: Text('Service deleted successfully'),
             backgroundColor: Color(0xFF10B981),
@@ -254,7 +252,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'No Job Opportunities Yet',
+            'No Job Opportunities Available',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -263,7 +261,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Job opportunities from employers will appear here when available',
+            'Check back later for new job postings from employers',
             style: TextStyle(
               fontSize: 14,
               color: Color(0xFF6B7280),
@@ -455,9 +453,9 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SectionHeader(
-                  title: 'Recent Job Opportunities',
-                  subtitle: 'Find jobs that match your skills',
-                  onSeeAll: _matchedJobs.length > 2 ? () {
+                  title: 'Latest Job Opportunities',
+                  subtitle: 'Explore all available job postings',
+                  onSeeAll: _matchedJobs.isNotEmpty ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('View All Jobs - Coming Soon'),

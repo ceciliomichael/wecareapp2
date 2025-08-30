@@ -130,7 +130,12 @@ class DatabaseMessagingService {
           .select()
           .single();
 
-      return _mapToMessage(response);
+      final message = _mapToMessage(response);
+      
+      // Update conversation with this new message
+      await _updateConversationLastMessage(conversationId, message);
+      
+      return message;
     } catch (e) {
       throw Exception('Failed to send message: $e');
     }
@@ -237,6 +242,47 @@ class DatabaseMessagingService {
           .eq('id', conversationId);
     } catch (e) {
       throw Exception('Failed to delete conversation: $e');
+    }
+  }
+
+  // Update conversation with last message
+  static Future<void> _updateConversationLastMessage(String conversationId, Message message) async {
+    try {
+      final currentUserId = await SessionService.getCurrentUserId();
+      final currentUserType = await SessionService.getCurrentUserType();
+      if (currentUserId == null || currentUserType == null) return;
+
+      // Get the conversation to update unread counts
+      final conversation = await getConversationById(conversationId);
+      if (conversation == null) return;
+
+      // Update unread counts based on who sent the message
+      int newUnreadCountEmployer = conversation.unreadCountEmployer;
+      int newUnreadCountHelper = conversation.unreadCountHelper;
+      
+      if (message.senderId != conversation.employerId) {
+        // Message from helper, increment employer's unread count
+        newUnreadCountEmployer = conversation.unreadCountEmployer + 1;
+      } else {
+        // Message from employer, increment helper's unread count  
+        newUnreadCountHelper = conversation.unreadCountHelper + 1;
+      }
+
+      // Update the conversation with the last message and unread counts
+      await SupabaseService.client
+          .from(_conversationsTable)
+          .update({
+            'last_message_id': message.id,
+            'last_message_content': message.content,
+            'last_message_sender_id': message.senderId,
+            'last_message_created_at': message.createdAt.toUtc().toIso8601String(),
+            'unread_count_employer': newUnreadCountEmployer,
+            'unread_count_helper': newUnreadCountHelper,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', conversationId);
+    } catch (e) {
+      // Handle error silently
     }
   }
 

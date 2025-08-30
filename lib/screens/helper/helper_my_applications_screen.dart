@@ -4,6 +4,7 @@ import '../../models/helper.dart';
 import '../../services/application_service.dart';
 import '../../services/session_service.dart';
 import '../../widgets/cards/helper_application_status_card.dart';
+import 'helper_application_details_screen.dart';
 
 class HelperMyApplicationsScreen extends StatefulWidget {
   const HelperMyApplicationsScreen({super.key});
@@ -69,13 +70,18 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
     }
   }
 
-  void _onApplicationTap(Application application) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing application for: ${application.jobTitle}'),
-        backgroundColor: const Color(0xFFFF8A50),
+  Future<void> _onApplicationTap(Application application) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HelperApplicationDetailsScreen(application: application),
       ),
     );
+    
+    // If application was updated (withdrawn), refresh the list
+    if (result != null) {
+      _loadApplications();
+    }
   }
 
   Future<void> _onWithdrawApplication(Application application) async {

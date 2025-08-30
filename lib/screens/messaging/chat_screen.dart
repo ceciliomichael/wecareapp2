@@ -8,11 +8,13 @@ import '../../widgets/messaging/message_bubble.dart';
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
   final String currentUserId;
+  final bool returnToConversationsList;
 
   const ChatScreen({
     super.key,
     required this.conversation,
     required this.currentUserId,
+    this.returnToConversationsList = false,
   });
 
   @override
@@ -187,6 +189,14 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        leading: widget.returnToConversationsList 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.popUntil(context, (route) => route.settings.name == '/conversations' || route.isFirst);
+                },
+              )
+            : null,
         title: Row(
           children: [
             Container(

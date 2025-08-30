@@ -69,12 +69,14 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   Future<void> _navigateToChat(Conversation conversation) async {
     if (_currentUserId == null) return;
 
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/chat'),
         builder: (context) => ChatScreen(
           conversation: conversation,
           currentUserId: _currentUserId!,
+          returnToConversationsList: true,
         ),
       ),
     );

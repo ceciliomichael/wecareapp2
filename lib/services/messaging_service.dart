@@ -36,6 +36,8 @@ class MessagingService {
       jobTitle: jobTitle,
       status: ConversationStatus.active,
       unreadCount: 0,
+      unreadCountEmployer: 0,
+      unreadCountHelper: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -173,12 +175,24 @@ class MessagingService {
     if (currentUserId == null) return;
 
     final messages = await getConversationMessages(conversationId);
-    final unreadCount = messages
+    
+    // Calculate unread counts for both employer and helper
+    final employerUnreadCount = messages
+        .where((m) => m.senderId != conversation.employerId && !m.isRead)
+        .length;
+    
+    final helperUnreadCount = messages
+        .where((m) => m.senderId != conversation.helperId && !m.isRead)
+        .length;
+
+    final generalUnreadCount = messages
         .where((m) => m.senderId != currentUserId && !m.isRead)
         .length;
 
     final updatedConversation = conversation.copyWith(
-      unreadCount: unreadCount,
+      unreadCount: generalUnreadCount,
+      unreadCountEmployer: employerUnreadCount,
+      unreadCountHelper: helperUnreadCount,
       updatedAt: DateTime.now(),
     );
 
@@ -219,13 +233,26 @@ class MessagingService {
     if (conversation == null) return;
 
     final currentUserId = await SessionService.getCurrentUserId();
-    final unreadCount = message.senderId == currentUserId 
-        ? conversation.unreadCount 
-        : conversation.unreadCount + 1;
+    
+    // Update unread counts based on who sent the message
+    int newUnreadCountEmployer = conversation.unreadCountEmployer;
+    int newUnreadCountHelper = conversation.unreadCountHelper;
+    
+    if (message.senderId != conversation.employerId) {
+      // Message from helper, increment employer's unread count
+      newUnreadCountEmployer = conversation.unreadCountEmployer + 1;
+    } else {
+      // Message from employer, increment helper's unread count
+      newUnreadCountHelper = conversation.unreadCountHelper + 1;
+    }
 
     final updatedConversation = conversation.copyWith(
       lastMessage: message,
-      unreadCount: unreadCount,
+      unreadCount: message.senderId == currentUserId 
+          ? conversation.unreadCount 
+          : conversation.unreadCount + 1,
+      unreadCountEmployer: newUnreadCountEmployer,
+      unreadCountHelper: newUnreadCountHelper,
       updatedAt: DateTime.now(),
     );
 

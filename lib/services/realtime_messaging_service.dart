@@ -223,18 +223,6 @@ class RealtimeMessagingService with WidgetsBindingObserver {
   static bool get isMessagePollingActive => _messagePollingTimer?.isActive ?? false;
   static bool get isConversationPollingActive => _conversationPollingTimer?.isActive ?? false;
   
-  // Debug method to check current state
-  static void debugPollingState() {
-    print('=== RealtimeMessagingService Debug ===');
-    print('Message polling active: $isMessagePollingActive');
-    print('Conversation polling active: $isConversationPollingActive');
-    print('Current conversation ID: $_currentConversationId');
-    print('App in foreground: $_isAppInForeground');
-    print('Last messages count: ${_lastMessages.length}');
-    print('Last conversations count: ${_lastConversations.length}');
-    print('=====================================');
-  }
-  
   // Clean up all timers
   static void dispose() {
     stopMessagePolling();

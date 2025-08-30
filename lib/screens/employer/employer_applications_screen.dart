@@ -6,6 +6,7 @@ import '../../services/job_posting_service.dart';
 import '../../services/session_service.dart';
 import '../../services/database_messaging_service.dart';
 import '../../widgets/cards/application_card.dart';
+import 'application_details_screen.dart';
 
 class EmployerApplicationsScreen extends StatefulWidget {
   const EmployerApplicationsScreen({super.key});
@@ -89,13 +90,18 @@ class _EmployerApplicationsScreenState extends State<EmployerApplicationsScreen>
     }
   }
 
-  void _onApplicationTap(Application application) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing application from ${application.helperName}'),
-        backgroundColor: const Color(0xFF1565C0),
+  Future<void> _onApplicationTap(Application application) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ApplicationDetailsScreen(application: application),
       ),
     );
+    
+    // If application was updated (accepted/rejected), refresh the list
+    if (result != null) {
+      _loadApplications();
+    }
   }
 
   Future<void> _onStatusChange(Application application, String newStatus) async {

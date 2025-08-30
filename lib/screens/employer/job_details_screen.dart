@@ -6,8 +6,8 @@ import '../../services/job_posting_service.dart';
 import '../../services/application_service.dart';
 import '../../utils/constants/payment_frequency_constants.dart';
 import '../../widgets/cards/application_card.dart';
-import '../../widgets/common/section_header.dart';
 import 'edit_job_screen.dart';
+import 'application_details_screen.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final JobPosting jobPosting;
@@ -131,14 +131,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   Future<void> _deleteJob() async {
     // Show confirmation dialog
-    final shouldDelete = await ConfirmationDialog.show(
+    final shouldDelete = await showDialog<bool>(
       context: context,
-      title: 'Delete Job Posting',
-      content: 'Are you sure you want to delete this job posting? This action cannot be undone and all applications will be lost.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      confirmColor: Colors.red,
-    );
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Job Posting'),
+        content: const Text('Are you sure you want to delete this job posting? This action cannot be undone and all applications will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ) ?? false;
 
     if (!shouldDelete) return;
 
@@ -194,6 +204,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       }
     }
   }
+
+
 
   Color _getStatusColor() {
     switch (_jobPosting.status) {
@@ -577,8 +589,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             children: _applications.map((application) {
               return ApplicationCard(
                 application: application,
-                onTap: () {
-                  // TODO: Navigate to application details
+                onTap: () async {
+                  // Navigate to application details screen
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ApplicationDetailsScreen(application: application),
+                    ),
+                  );
+                  
+                  // If application was updated, refresh the list
+                  if (result != null) {
+                    _loadApplications();
+                  }
                 },
                 onStatusChange: (status) => _onApplicationStatusChange(application.id, status),
               );
