@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 class HelperServicePosting {
   final String id;
+  final String helperId;
+  final String helperName;
   final String title;
   final String description;
   final List<String> skills;
@@ -16,6 +18,8 @@ class HelperServicePosting {
 
   HelperServicePosting({
     required this.id,
+    required this.helperId,
+    required this.helperName,
     required this.title,
     required this.description,
     required this.skills,
@@ -69,14 +73,18 @@ class HelperServicePosting {
     }
   }
 
-  String get primarySkill => skills.isNotEmpty ? skills.first : '';
+  String get primaryExpertise => skills.isNotEmpty ? skills.first : '';
   
-  String get skillsText {
+  String get expertiseText {
     if (skills.isEmpty) return '';
     if (skills.length == 1) return skills.first;
     if (skills.length == 2) return '${skills.first} & ${skills.last}';
     return '${skills.first} +${skills.length - 1} more';
   }
+  
+  // Keep the old getters for backward compatibility
+  String get primarySkill => primaryExpertise;
+  String get skillsText => expertiseText;
 
   String get serviceAreasText {
     if (serviceAreas.isEmpty) return '';

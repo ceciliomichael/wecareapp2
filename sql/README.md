@@ -47,6 +47,14 @@ This will create the employers table with the following structure:
 - Execute `sql/helper/create_helper_table.sql`
 - Execute `sql/helper/disable_rls_and_create_policies.sql`
 
+#### Job Postings Setup
+- Execute `sql/job_postings/create_job_postings_table.sql`
+- Execute `sql/job_postings/disable_rls_and_create_policies.sql`
+
+#### Applications Setup
+- Execute `sql/applications/create_applications_table.sql`
+- Execute `sql/applications/disable_rls_and_create_policies.sql`
+
 This will create the helpers table with the following structure:
 - `id` (UUID, Primary Key)
 - `first_name` (VARCHAR(50))
@@ -60,6 +68,28 @@ This will create the helpers table with the following structure:
 - `barangay_clearance_base64` (TEXT) - Stores base64 encoded image
 - `is_verified` (BOOLEAN)
 - `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+This will create the job_postings table with the following structure:
+- `id` (UUID, Primary Key)
+- `employer_id` (UUID, Foreign Key to employers table)
+- `title` (VARCHAR(200)) - Job title
+- `description` (TEXT) - Job description
+- `salary` (DECIMAL(10,2)) - Salary amount
+- `payment_frequency` (VARCHAR(50)) - Payment frequency (Per Hour, Per Day, Per Week, bi weekly, Per Month)
+- `barangay` (VARCHAR(100)) - Job location
+- `required_skills` (TEXT[]) - Array of required skills
+- `status` (VARCHAR(20)) - Job status (active, paused, closed)
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+This will create the applications table with the following structure:
+- `id` (UUID, Primary Key)
+- `job_posting_id` (UUID, Foreign Key to job_postings table)
+- `helper_id` (UUID, Foreign Key to helpers table)
+- `cover_letter` (TEXT) - Application cover letter
+- `status` (VARCHAR(20)) - Application status (pending, accepted, rejected, withdrawn)
+- `applied_at` (TIMESTAMP) - When application was submitted
 - `updated_at` (TIMESTAMP)
 
 ### 4. Fix 401 Unauthorized Error

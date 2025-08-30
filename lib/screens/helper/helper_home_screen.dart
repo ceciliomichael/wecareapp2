@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../models/job_opportunity.dart';
+import '../../models/job_posting.dart';
 import '../../models/helper_service_posting.dart';
+import '../../models/helper.dart';
 import '../../services/subscription_service.dart';
-import '../../services/messaging_service.dart';
-import '../../widgets/cards/job_opportunity_card.dart';
+import '../../services/database_messaging_service.dart';
+import '../../services/job_posting_service.dart';
+import '../../services/helper_service_posting_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/cards/helper_service_posting_card.dart';
 import '../../widgets/buttons/post_service_button.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/subscription/subscription_status_banner.dart';
 import '../helper/helper_subscription_screen.dart';
+import '../helper/apply_job_screen.dart';
+import '../helper/post_service_screen.dart';
+import '../helper/edit_service_screen.dart';
 import '../messaging/conversations_screen.dart';
 
 class HelperHomeScreen extends StatefulWidget {
@@ -21,12 +27,87 @@ class HelperHomeScreen extends StatefulWidget {
 class _HelperHomeScreenState extends State<HelperHomeScreen> {
   Map<String, dynamic>? _subscriptionStatus;
   int _unreadMessageCount = 0;
+  Helper? _currentHelper;
+  List<JobPosting> _matchedJobs = [];
+  List<HelperServicePosting> _myServices = [];
+  bool _isLoadingJobs = true;
+  bool _isLoadingServices = true;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentHelper();
     _loadSubscriptionStatus();
     _loadUnreadMessageCount();
+  }
+
+  Future<void> _loadCurrentHelper() async {
+    try {
+      final helper = await SessionService.getCurrentHelper();
+      if (helper != null && mounted) {
+        setState(() {
+          _currentHelper = helper;
+        });
+        _loadMatchedJobs();
+        _loadMyServices();
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadMatchedJobs() async {
+    if (_currentHelper == null) return;
+    
+    setState(() {
+      _isLoadingJobs = true;
+    });
+
+    try {
+      final jobs = await JobPostingService.getMatchedJobsForHelper(
+        helperSkills: _currentHelper!.skill,
+        helperBarangay: _currentHelper!.barangay,
+        limit: 2,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _matchedJobs = jobs;
+          _isLoadingJobs = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingJobs = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMyServices() async {
+    if (_currentHelper == null) return;
+    
+    setState(() {
+      _isLoadingServices = true;
+    });
+
+    try {
+      final services = await HelperServicePostingService.getServicePostingsByHelper(_currentHelper!.id);
+      
+      if (mounted) {
+        setState(() {
+          _myServices = services;
+          _isLoadingServices = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingServices = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadSubscriptionStatus() async {
@@ -44,7 +125,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
 
   Future<void> _loadUnreadMessageCount() async {
     try {
-      final count = await MessagingService.getTotalUnreadCount();
+      final count = await DatabaseMessagingService.getTotalUnreadCount();
       if (mounted) {
         setState(() {
           _unreadMessageCount = count;
@@ -74,33 +155,48 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
       // Refresh unread count when returning
       _loadUnreadMessageCount();
     });
+    
+    // Also schedule a short delayed refresh to catch async updates
+    Future.delayed(const Duration(milliseconds: 400), _loadUnreadMessageCount);
   }
 
   void _onPostService(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Post Service functionality - Coming Soon'),
-        backgroundColor: Color(0xFFFF8A50),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PostServiceScreen(),
       ),
-    );
+    ).then((_) {
+      // Refresh services when returning
+      _loadMyServices();
+    });
   }
 
-  void _onJobTap(BuildContext context, JobOpportunity job) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing job: ${job.title}'),
-        backgroundColor: const Color(0xFFFF8A50),
-      ),
-    );
-  }
+  Future<void> _onJobTap(BuildContext context, JobPosting job) async {
+    if (_currentHelper == null) return;
 
-  void _onApply(BuildContext context, JobOpportunity job) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Applied to: ${job.title}'),
-        backgroundColor: const Color(0xFF10B981),
+    // Navigate to apply screen
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ApplyJobScreen(jobPosting: job),
       ),
     );
+
+    if (result == true) {
+      if (mounted) {
+        // Application submitted successfully
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application submitted successfully!'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        
+        // Refresh matched jobs
+        _loadMatchedJobs();
+      }
+    }
   }
 
   void _onServiceTap(BuildContext context, HelperServicePosting service) {
@@ -112,25 +208,31 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
     );
   }
 
-  void _onEditService(BuildContext context, HelperServicePosting service) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Edit Service functionality - Coming Soon'),
-        backgroundColor: Color(0xFFFF8A50),
+  void _onEditService(BuildContext context, HelperServicePosting service) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditServiceScreen(servicePosting: service),
       ),
     );
+
+    // Always refresh the services list when returning from edit screen
+    // This handles updates, deletions, and status changes
+    _loadMyServices();
+
+    if (result == 'deleted') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Service deleted successfully'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    }
   }
 
-  void _onServiceStatusChange(BuildContext context, HelperServicePosting service, String newStatus) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Service ${newStatus == 'active' ? 'activated' : 'paused'}'),
-        backgroundColor: newStatus == 'active' 
-            ? const Color(0xFF10B981) 
-            : const Color(0xFFF59E0B),
-      ),
-    );
-  }
+
 
   Widget _buildEmptyJobsState() {
     return Container(
@@ -218,8 +320,6 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final jobOpportunities = <JobOpportunity>[]; // Empty list - no mock data
-    final myServices = <HelperServicePosting>[]; // Empty list - no mock data
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -357,7 +457,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                 child: SectionHeader(
                   title: 'Recent Job Opportunities',
                   subtitle: 'Find jobs that match your skills',
-                  onSeeAll: jobOpportunities.length > 3 ? () {
+                  onSeeAll: _matchedJobs.length > 2 ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('View All Jobs - Coming Soon'),
@@ -373,17 +473,22 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
               // Job Opportunities List or Empty State
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: jobOpportunities.isEmpty
-                    ? _buildEmptyJobsState()
-                    : Column(
-                        children: jobOpportunities.take(3).map((job) {
-                          return JobOpportunityCard(
-                            jobOpportunity: job,
-                            onTap: () => _onJobTap(context, job),
-                            onApply: () => _onApply(context, job),
-                          );
-                        }).toList(),
-                      ),
+                child: _isLoadingJobs
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFF8A50),
+                          ),
+                        ),
+                      )
+                    : _matchedJobs.isEmpty
+                        ? _buildEmptyJobsState()
+                        : Column(
+                            children: _matchedJobs.map((job) {
+                              return _buildJobCard(job);
+                            }).toList(),
+                          ),
               ),
 
               const SizedBox(height: 32),
@@ -394,7 +499,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                 child: SectionHeader(
                   title: 'My Posted Services',
                   subtitle: 'Manage your service offerings',
-                  onSeeAll: myServices.length > 2 ? () {
+                  onSeeAll: _myServices.length > 2 ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('View All Services - Coming Soon'),
@@ -410,22 +515,178 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
               // My Services List or Empty State
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: myServices.isEmpty
-                    ? _buildEmptyServicesState()
-                    : Column(
-                        children: myServices.take(2).map((service) {
-                          return HelperServicePostingCard(
-                            servicePosting: service,
-                            onTap: () => _onServiceTap(context, service),
-                            onEdit: () => _onEditService(context, service),
-                            onStatusChange: (status) => _onServiceStatusChange(context, service, status),
-                          );
-                        }).toList(),
-                      ),
+                child: _isLoadingServices
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFF8A50),
+                          ),
+                        ),
+                      )
+                    : _myServices.isEmpty
+                        ? _buildEmptyServicesState()
+                        : Column(
+                            children: _myServices.take(2).map((service) {
+                              return HelperServicePostingCard(
+                                servicePosting: service,
+                                onTap: () => _onServiceTap(context, service),
+                                onEdit: () => _onEditService(context, service),
+                              );
+                            }).toList(),
+                          ),
               ),
 
               const SizedBox(height: 32),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobCard(JobPosting job) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(16),
+        shadowColor: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+        child: InkWell(
+          onTap: () => _onJobTap(context, job),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              border: Border.all(
+                color: const Color(0xFFE5E7EB),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and salary
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        job.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '₱${job.salary.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Payment frequency and location
+                Row(
+                  children: [
+                    Text(
+                      job.paymentFrequency,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      job.barangay,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Description
+                Text(
+                  job.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                    height: 1.4,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Required skills
+                if (job.requiredSkills.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: job.requiredSkills.take(3).map((skill) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          skill,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF8A50),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Apply button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: () => _onJobTap(context, job),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF8A50),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Apply',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -462,6 +723,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Container(
                     width: 48,
@@ -478,9 +740,13 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                   ),
                   if (badgeCount != null && badgeCount > 0)
                     Positioned(
-                      right: -4,
-                      top: -4,
+                      right: -6,
+                      top: -6,
                       child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
@@ -488,6 +754,17 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
                           badgeCount > 99 ? '99+' : badgeCount.toString(),
@@ -496,6 +773,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),

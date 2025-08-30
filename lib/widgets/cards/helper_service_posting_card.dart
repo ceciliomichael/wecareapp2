@@ -5,14 +5,12 @@ class HelperServicePostingCard extends StatelessWidget {
   final HelperServicePosting servicePosting;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
-  final Function(String)? onStatusChange;
 
   const HelperServicePostingCard({
     super.key,
     required this.servicePosting,
     this.onTap,
     this.onEdit,
-    this.onStatusChange,
   });
 
   Widget _buildSkillsChips() {
@@ -122,7 +120,7 @@ class HelperServicePostingCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Skills:',
+                            'Expertise:',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -257,56 +255,24 @@ class HelperServicePostingCard extends StatelessWidget {
                       ),
                     ),
                     if (onEdit != null)
-                      Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              onPressed: onEdit,
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: Color(0xFFFF8A50),
-                                size: 20,
-                              ),
-                              tooltip: 'Edit Service',
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                            ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          onPressed: onEdit,
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: Color(0xFFFF8A50),
+                            size: 20,
                           ),
-                          const SizedBox(width: 8),
-                          if (onStatusChange != null)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: servicePosting.status == 'active'
-                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.1)
-                                    : const Color(0xFF10B981).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: IconButton(
-                                onPressed: () {
-                                  final newStatus = servicePosting.status == 'active' ? 'paused' : 'active';
-                                  onStatusChange!(newStatus);
-                                },
-                                icon: Icon(
-                                  servicePosting.status == 'active' ? Icons.pause : Icons.play_arrow,
-                                  color: servicePosting.status == 'active'
-                                      ? const Color(0xFFF59E0B)
-                                      : const Color(0xFF10B981),
-                                  size: 20,
-                                ),
-                                tooltip: servicePosting.status == 'active' ? 'Pause Service' : 'Activate Service',
-                                constraints: const BoxConstraints(
-                                  minWidth: 36,
-                                  minHeight: 36,
-                                ),
-                              ),
-                            ),
-                        ],
+                          tooltip: 'Edit Service',
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                        ),
                       ),
                   ],
                 ),

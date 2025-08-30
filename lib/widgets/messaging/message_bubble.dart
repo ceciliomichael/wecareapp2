@@ -99,7 +99,9 @@ class MessageBubble extends StatelessWidget {
                           Icon(
                             _getStatusIcon(),
                             size: 14,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: message.status == MessageStatus.read 
+                                ? const Color(0xFF00BCD4) // Cyan for read
+                                : Colors.white.withValues(alpha: 0.8),
                           ),
                         ],
                       ],
@@ -118,6 +120,12 @@ class MessageBubble extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    
+    // Debug: Let's see what's happening with dates
+    // print('Now: $now');
+    // print('Message DateTime: $dateTime');
+    // print('Today: $today');
+    // print('Message Date: $messageDate');
     
     if (messageDate == today) {
       // Today - show time only

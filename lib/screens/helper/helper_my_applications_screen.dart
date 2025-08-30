@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/helper_application.dart';
-import '../../widgets/cards/helper_application_card.dart';
+import '../../models/application.dart';
+import '../../models/helper.dart';
+import '../../services/application_service.dart';
+import '../../services/session_service.dart';
+import '../../widgets/cards/helper_application_status_card.dart';
 
 class HelperMyApplicationsScreen extends StatefulWidget {
   const HelperMyApplicationsScreen({super.key});
@@ -10,10 +13,63 @@ class HelperMyApplicationsScreen extends StatefulWidget {
 }
 
 class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen> {
-  final List<HelperApplication> _applications = [];
+  List<Application> _applications = [];
   String _selectedFilter = 'all'; // 'all', 'pending', 'accepted', 'rejected'
+  bool _isLoading = true;
+  String? _errorMessage;
+  Helper? _currentHelper;
 
-  void _onApplicationTap(HelperApplication application) {
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentHelper();
+  }
+
+  Future<void> _loadCurrentHelper() async {
+    try {
+      final helper = await SessionService.getCurrentHelper();
+      if (helper != null) {
+        setState(() {
+          _currentHelper = helper;
+        });
+        await _loadApplications();
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load helper information';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadApplications() async {
+    if (_currentHelper == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final applications = await ApplicationService.getApplicationsByHelper(_currentHelper!.id);
+      
+      if (mounted) {
+        setState(() {
+          _applications = applications;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load applications: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _onApplicationTap(Application application) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Viewing application for: ${application.jobTitle}'),
@@ -22,8 +78,8 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
     );
   }
 
-  void _onWithdrawApplication(HelperApplication application) {
-    showDialog(
+  Future<void> _onWithdrawApplication(Application application) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -31,39 +87,11 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
           content: Text('Are you sure you want to withdraw your application for "${application.jobTitle}"?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  final index = _applications.indexWhere((app) => app.id == application.id);
-                  if (index != -1) {
-                    _applications[index] = HelperApplication(
-                      id: application.id,
-                      jobId: application.jobId,
-                      jobTitle: application.jobTitle,
-                      employerName: application.employerName,
-                      jobLocation: application.jobLocation,
-                      jobSalary: application.jobSalary,
-                      jobSalaryPeriod: application.jobSalaryPeriod,
-                      coverLetter: application.coverLetter,
-                      appliedDate: application.appliedDate,
-                      status: 'withdrawn',
-                      responseDate: DateTime.now(),
-                      employerMessage: application.employerMessage,
-                      requiredSkills: application.requiredSkills,
-                    );
-                  }
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Application withdrawn successfully'),
-                    backgroundColor: Color(0xFF6B7280),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: const Color(0xFFF44336)),
               child: const Text('Withdraw'),
             ),
@@ -71,9 +99,34 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
         );
       },
     );
+
+    if (confirmed == true) {
+      try {
+        await ApplicationService.withdrawApplication(application.id);
+        await _loadApplications(); // Refresh the list
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Application withdrawn successfully'),
+              backgroundColor: Color(0xFF6B7280),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to withdraw application: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
-  List<HelperApplication> get _filteredApplications {
+  List<Application> get _filteredApplications {
     if (_selectedFilter == 'all') return _applications;
     return _applications.where((app) => app.status == _selectedFilter).toList();
   }
@@ -225,9 +278,122 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
     );
   }
 
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFFF8A50),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.red.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Error Loading Applications',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadApplications,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF8A50),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final filteredApplications = _filteredApplications;
+
+    if (_applications.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    if (filteredApplications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_list_off,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No $_selectedFilter applications',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadApplications,
+      color: const Color(0xFFFF8A50),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        itemCount: filteredApplications.length,
+        itemBuilder: (context, index) {
+          return HelperApplicationStatusCard(
+            application: filteredApplications[index],
+            onTap: () => _onApplicationTap(filteredApplications[index]),
+            onWithdraw: filteredApplications[index].isPending 
+                ? () => _onWithdrawApplication(filteredApplications[index])
+                : null,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filteredApplications = _filteredApplications;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -294,43 +460,7 @@ class _HelperMyApplicationsScreenState extends State<HelperMyApplicationsScreen>
             
             // Content
             Expanded(
-              child: _applications.isEmpty
-                  ? _buildEmptyState()
-                  : filteredApplications.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.filter_list_off,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No $_selectedFilter applications',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          itemCount: filteredApplications.length,
-                          itemBuilder: (context, index) {
-                            return HelperApplicationCard(
-                              application: filteredApplications[index],
-                              onTap: () => _onApplicationTap(filteredApplications[index]),
-                              onWithdraw: filteredApplications[index].isPending 
-                                  ? () => _onWithdrawApplication(filteredApplications[index])
-                                  : null,
-                            );
-                          },
-                        ),
+              child: _buildContent(),
             ),
           ],
         ),

@@ -135,7 +135,7 @@ class ConversationCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              conversation.unreadCount.toString(),
+                              conversation.getUserUnreadCount(currentUserId).toString(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

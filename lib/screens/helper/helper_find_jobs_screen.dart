@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../models/job_opportunity.dart';
-import '../../widgets/cards/job_opportunity_card.dart';
+import '../../models/job_posting.dart';
+import '../../models/helper.dart';
+import '../../services/job_posting_service.dart';
+import '../../services/application_service.dart';
+import '../../services/session_service.dart';
+import '../../utils/constants/barangay_constants.dart';
+import '../../utils/constants/payment_frequency_constants.dart';
+import 'apply_job_screen.dart';
 
 class HelperFindJobsScreen extends StatefulWidget {
   const HelperFindJobsScreen({super.key});
@@ -11,43 +17,46 @@ class HelperFindJobsScreen extends StatefulWidget {
 
 class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<JobOpportunity> _allJobs = [];
-  List<JobOpportunity> _filteredJobs = [];
+  List<JobPosting> _allJobs = [];
+  List<JobPosting> _filteredJobs = [];
   String _selectedLocation = 'All Locations';
-  String _selectedJobType = 'All Types';
-  String _selectedSalaryRange = 'All Ranges';
+  String _selectedPaymentFreq = 'All Frequencies';
+  bool _isLoading = true;
+  String? _errorMessage;
+  Helper? _currentHelper;
+  Set<String> _appliedJobIds = {};
 
   final List<String> _locations = [
     'All Locations',
-    'Makati City',
-    'BGC, Taguig',
-    'Quezon City',
-    'Manila',
-    'Pasig',
-    'Ortigas',
+    ...BarangayConstants.tagbilaranBarangays,
   ];
 
-  final List<String> _jobTypes = [
-    'All Types',
-    'Full Time',
-    'Part Time',
-    'Contract',
-    'Live-in',
-  ];
-
-  final List<String> _salaryRanges = [
-    'All Ranges',
-    '₱200-₱400/day',
-    '₱400-₱600/day',
-    '₱600-₱800/day',
-    '₱800+/day',
+  final List<String> _paymentFrequencies = [
+    'All Frequencies',
+    ...PaymentFrequencyConstants.frequencies,
   ];
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentHelper();
     _loadJobs();
     _searchController.addListener(_filterJobs);
+    
+    // Add periodic refresh to keep job list updated
+    Future.delayed(const Duration(seconds: 5), _startPeriodicRefresh);
+  }
+
+  void _startPeriodicRefresh() {
+    if (!mounted) return;
+    
+    // Refresh jobs every 60 seconds to catch deleted jobs
+    Future.delayed(const Duration(seconds: 60), () {
+      if (mounted) {
+        _loadJobs();
+        _startPeriodicRefresh();
+      }
+    });
   }
 
   @override
@@ -56,63 +65,127 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
     super.dispose();
   }
 
-  void _loadJobs() {
-    // In a real app, this would be an API call
+  Future<void> _loadCurrentHelper() async {
+    try {
+      final helper = await SessionService.getCurrentHelper();
+      if (helper != null) {
+        setState(() {
+          _currentHelper = helper;
+        });
+        
+        // Load helper's applied jobs
+        await _loadAppliedJobs();
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadAppliedJobs() async {
+    if (_currentHelper == null) return;
+    
+    try {
+      final applications = await ApplicationService.getApplicationsByHelper(_currentHelper!.id);
+      
+      if (mounted) {
+        setState(() {
+          _appliedJobIds = applications.map((app) => app.jobId).toSet();
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadJobs() async {
     setState(() {
-      _allJobs = [];  // Empty list - no mock data
-      _filteredJobs = _allJobs;
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final jobs = await JobPostingService.getActiveJobPostings();
+      
+      if (mounted) {
+        setState(() {
+          _allJobs = jobs;
+          _filteredJobs = jobs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load jobs: $e';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _filterJobs() {
     setState(() {
       _filteredJobs = _allJobs.where((job) {
         final matchesSearch = job.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-                            job.description.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-                            job.employerName.toLowerCase().contains(_searchController.text.toLowerCase());
+                            job.description.toLowerCase().contains(_searchController.text.toLowerCase());
         
-        final matchesLocation = _selectedLocation == 'All Locations' || job.location == _selectedLocation;
-        final matchesJobType = _selectedJobType == 'All Types' || job.jobTypeDisplayText == _selectedJobType;
+        final matchesLocation = _selectedLocation == 'All Locations' || job.barangay == _selectedLocation;
+        final matchesPaymentFreq = _selectedPaymentFreq == 'All Frequencies' || job.paymentFrequency == _selectedPaymentFreq;
         
-        bool matchesSalary = true;
-        if (_selectedSalaryRange != 'All Ranges') {
-          switch (_selectedSalaryRange) {
-            case '₱200-₱400/day':
-              matchesSalary = job.salary >= 200 && job.salary <= 400 && job.salaryPeriod == 'daily';
-              break;
-            case '₱400-₱600/day':
-              matchesSalary = job.salary >= 400 && job.salary <= 600 && job.salaryPeriod == 'daily';
-              break;
-            case '₱600-₱800/day':
-              matchesSalary = job.salary >= 600 && job.salary <= 800 && job.salaryPeriod == 'daily';
-              break;
-            case '₱800+/day':
-              matchesSalary = job.salary >= 800 && job.salaryPeriod == 'daily';
-              break;
-          }
-        }
-        
-        return matchesSearch && matchesLocation && matchesJobType && matchesSalary;
+        return matchesSearch && matchesLocation && matchesPaymentFreq;
       }).toList();
     });
   }
 
-  void _onJobTap(JobOpportunity job) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing job: ${job.title}'),
-        backgroundColor: const Color(0xFFFF8A50),
-      ),
-    );
-  }
+  Future<void> _onJobTap(JobPosting job) async {
+    if (_currentHelper == null) return;
 
-  void _onApply(JobOpportunity job) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Applied to: ${job.title}'),
-        backgroundColor: const Color(0xFF10B981),
-      ),
-    );
+    // Check if already applied
+    try {
+      final hasApplied = await ApplicationService.hasApplied(job.id, _currentHelper!.id);
+      
+      if (hasApplied && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already applied to this job'),
+            backgroundColor: Color(0xFFFF9800),
+          ),
+        );
+        return;
+      }
+
+      // Navigate to apply screen
+      if (!mounted) return;
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ApplyJobScreen(jobPosting: job),
+        ),
+      );
+
+      if (result == true && mounted) {
+        // Application submitted successfully - add to applied jobs set
+        setState(() {
+          _appliedJobIds.add(job.id);
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application submitted successfully!'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildSearchBar() {
@@ -165,16 +238,9 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
             });
           }),
           const SizedBox(width: 12),
-          _buildFilterDropdown('Type', _selectedJobType, _jobTypes, (value) {
+          _buildFilterDropdown('Payment', _selectedPaymentFreq, _paymentFrequencies, (value) {
             setState(() {
-              _selectedJobType = value!;
-              _filterJobs();
-            });
-          }),
-          const SizedBox(width: 12),
-          _buildFilterDropdown('Salary', _selectedSalaryRange, _salaryRanges, (value) {
-            setState(() {
-              _selectedSalaryRange = value!;
+              _selectedPaymentFreq = value!;
               _filterJobs();
             });
           }),
@@ -321,6 +387,322 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
     );
   }
 
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFFF8A50),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.red.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Error Loading Jobs',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadJobs,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF8A50),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_allJobs.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    if (_filteredJobs.isEmpty) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No jobs match your filters',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Try adjusting your search criteria',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadJobs,
+      color: const Color(0xFFFF8A50),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: _filteredJobs.length,
+        itemBuilder: (context, index) {
+          return _buildJobCard(_filteredJobs[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildJobCard(JobPosting job) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(16),
+        shadowColor: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+        child: InkWell(
+          onTap: () => _onJobTap(job),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              border: Border.all(
+                color: const Color(0xFFE5E7EB),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and salary
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        job.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '₱${job.salary.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Payment frequency and location
+                Row(
+                  children: [
+                    Text(
+                      PaymentFrequencyConstants.frequencyLabels[job.paymentFrequency] ?? job.paymentFrequency,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      job.barangay,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Description
+                Text(
+                  job.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Required skills
+                if (job.requiredSkills.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: job.requiredSkills.take(3).map((skill) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          skill,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF8A50),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                                 // Posted date and apply button
+                 Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   children: [
+                     Text(
+                       'Posted ${_formatDate(job.createdAt)}',
+                       style: TextStyle(
+                         fontSize: 12,
+                         color: Colors.grey[500],
+                       ),
+                     ),
+                     _appliedJobIds.contains(job.id)
+                         ? Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                             decoration: BoxDecoration(
+                               color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                               borderRadius: BorderRadius.circular(8),
+                               border: Border.all(
+                                 color: const Color(0xFF10B981),
+                                 width: 1,
+                               ),
+                             ),
+                             child: const Text(
+                               'Applied',
+                               style: TextStyle(
+                                 fontSize: 12,
+                                 fontWeight: FontWeight.bold,
+                                 color: Color(0xFF10B981),
+                               ),
+                             ),
+                           )
+                         : ElevatedButton(
+                             onPressed: () => _onJobTap(job),
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: const Color(0xFFFF8A50),
+                               foregroundColor: Colors.white,
+                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                               shape: RoundedRectangleBorder(
+                                 borderRadius: BorderRadius.circular(8),
+                               ),
+                             ),
+                             child: const Text(
+                               'Apply',
+                               style: TextStyle(
+                                 fontSize: 12,
+                                 fontWeight: FontWeight.bold,
+                               ),
+                             ),
+                           ),
+                   ],
+                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date).inDays;
+    
+    if (difference == 0) return 'today';
+    if (difference == 1) return 'yesterday';
+    if (difference < 7) return '$difference days ago';
+    if (difference < 30) return '${(difference / 7).floor()} weeks ago';
+    return '${(difference / 30).floor()} months ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -379,63 +761,7 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
 
             // Content
             Expanded(
-              child: _allJobs.isEmpty
-                  ? _buildEmptyState()
-                  : _filteredJobs.isEmpty
-                      ? LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(32),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.search_off,
-                                          size: 64,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        const Text(
-                                          'No jobs match your filters',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF6B7280),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'Try adjusting your search criteria',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Color(0xFF9CA3AF),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          itemCount: _filteredJobs.length,
-                          itemBuilder: (context, index) {
-                            return JobOpportunityCard(
-                              jobOpportunity: _filteredJobs[index],
-                              onTap: () => _onJobTap(_filteredJobs[index]),
-                              onApply: () => _onApply(_filteredJobs[index]),
-                            );
-                          },
-                        ),
+              child: _buildContent(),
             ),
           ],
         ),

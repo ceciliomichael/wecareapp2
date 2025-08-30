@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/conversation.dart';
-import '../../services/messaging_service.dart';
+import '../../services/database_messaging_service.dart';
 import '../../services/session_service.dart';
+import '../../services/realtime_messaging_service.dart';
 import '../../widgets/messaging/conversation_card.dart';
 import 'chat_screen.dart';
 
@@ -21,12 +22,19 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   void initState() {
     super.initState();
     _loadConversations();
+    _startRealtimePolling();
+  }
+
+  @override
+  void dispose() {
+    RealtimeMessagingService.stopConversationPolling();
+    super.dispose();
   }
 
   Future<void> _loadConversations() async {
     try {
       final currentUserId = await SessionService.getCurrentUserId();
-      final conversations = await MessagingService.getUserConversations();
+      final conversations = await DatabaseMessagingService.getUserConversations();
       
       if (mounted) {
         setState(() {
@@ -44,6 +52,20 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
   }
 
+  void _startRealtimePolling() {
+    RealtimeMessagingService.startConversationPolling(
+      onConversationsUpdated: _onConversationsUpdated,
+    );
+  }
+
+  void _onConversationsUpdated(List<Conversation> conversations) {
+    if (mounted) {
+      setState(() {
+        _conversations = conversations;
+      });
+    }
+  }
+
   Future<void> _navigateToChat(Conversation conversation) async {
     if (_currentUserId == null) return;
 
@@ -57,10 +79,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       ),
     );
 
-    // Refresh conversations if needed
-    if (result == true) {
-      _loadConversations();
-    }
+    // Force refresh conversations when returning from chat
+    RealtimeMessagingService.refreshConversations();
   }
 
   @override
@@ -95,7 +115,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                       return ConversationCard(
                         conversation: conversation,
                         currentUserId: _currentUserId!,
-                        onTap: () => _navigateToChat(conversation),
+                        onTap: () async {
+                          await _navigateToChat(conversation);
+                          // Hard refresh after returning to ensure badges clear immediately
+                          _loadConversations();
+                        },
                       );
                     },
                   ),

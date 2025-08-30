@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/conversation.dart';
 import '../../models/message.dart';
-import '../../services/messaging_service.dart';
+import '../../services/database_messaging_service.dart';
+import '../../services/realtime_messaging_service.dart';
 import '../../widgets/messaging/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -30,18 +31,29 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadMessages();
     _markMessagesAsRead();
+    _startRealtimePolling();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Mark messages as read when screen becomes visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markMessagesAsRead();
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    RealtimeMessagingService.stopMessagePolling();
     super.dispose();
   }
 
   Future<void> _loadMessages() async {
     try {
-      final messages = await MessagingService.getConversationMessages(widget.conversation.id);
+      final messages = await DatabaseMessagingService.getConversationMessages(widget.conversation.id);
       
       if (mounted) {
         setState(() {
@@ -63,9 +75,52 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _startRealtimePolling() {
+    RealtimeMessagingService.startMessagePolling(
+      conversationId: widget.conversation.id,
+      onMessagesUpdated: _onMessagesUpdated,
+    );
+  }
+
+  void _onMessagesUpdated(List<Message> messages) {
+    if (mounted) {
+      final shouldScrollToBottom = _isAtBottom();
+      final oldMessageCount = _messages.length;
+      final newMessageCount = messages.length;
+      
+      setState(() {
+        _messages = messages;
+      });
+      
+      // Auto-scroll to bottom if user was already at bottom or if there are new messages
+      if (shouldScrollToBottom || newMessageCount > oldMessageCount) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
+      
+      // If new messages arrived, mark them as read immediately since user is in chat
+      if (newMessageCount > oldMessageCount) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _markMessagesAsRead();
+        });
+      }
+    }
+  }
+
+  bool _isAtBottom() {
+    if (!_scrollController.hasClients) return true;
+    
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    return (maxScroll - currentScroll) < 100.0; // Within 100 pixels of bottom
+  }
+
   Future<void> _markMessagesAsRead() async {
     try {
-      await MessagingService.markMessagesAsRead(widget.conversation.id, widget.currentUserId);
+      await DatabaseMessagingService.markMessagesAsRead(widget.conversation.id, widget.currentUserId);
+      // Force refresh conversations to update unread counts immediately
+      RealtimeMessagingService.refreshConversations();
     } catch (e) {
       // Handle error silently
     }
@@ -80,7 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     try {
-      final message = await MessagingService.sendMessage(
+      final message = await DatabaseMessagingService.sendMessage(
         conversationId: widget.conversation.id,
         content: content,
       );
@@ -94,6 +149,9 @@ class _ChatScreenState extends State<ChatScreen> {
         });
 
         _scrollToBottom();
+        
+        // Force refresh to ensure real-time polling updates
+        RealtimeMessagingService.refreshMessages();
       }
     } catch (e) {
       if (mounted) {
