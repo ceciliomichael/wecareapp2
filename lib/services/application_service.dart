@@ -1,5 +1,6 @@
 import '../models/application.dart';
 import '../services/supabase_service.dart';
+import 'job_posting_service.dart';
 
 class ApplicationService {
   static const String _tableName = 'applications';
@@ -89,10 +90,9 @@ class ApplicationService {
   /// Update application status (for employers)
   static Future<Application> updateApplicationStatus(String applicationId, String status) async {
     try {
-      final response = await SupabaseService.client
+      // First get the application details
+      final appResponse = await SupabaseService.client
           .from(_tableName)
-          .update({'status': status})
-          .eq('id', applicationId)
           .select('''
             *,
             helpers (
@@ -108,9 +108,41 @@ class ApplicationService {
               title
             )
           ''')
+          .eq('id', applicationId)
           .single();
 
-      return _mapToApplicationWithDetails(response);
+      // Update the application status
+      await SupabaseService.client
+          .from(_tableName)
+          .update({'status': status})
+          .eq('id', applicationId);
+
+      // If application is accepted, assign helper to job and reject other applications
+      if (status == 'accepted') {
+        final jobId = appResponse['job_posting_id'] as String;
+        final helperId = appResponse['helper_id'] as String;
+        final helper = appResponse['helpers'] as Map<String, dynamic>;
+        final helperName = '${helper['first_name']} ${helper['last_name']}';
+
+        // Assign helper to job (this moves job to 'in_progress' status)
+        await JobPostingService.assignHelperToJob(
+          jobId: jobId,
+          helperId: helperId,
+          helperName: helperName,
+        );
+
+        // Reject all other pending applications for this job
+        await SupabaseService.client
+            .from(_tableName)
+            .update({'status': 'rejected'})
+            .eq('job_posting_id', jobId)
+            .neq('id', applicationId)
+            .eq('status', 'pending');
+      }
+
+      // Return the updated application
+      appResponse['status'] = status;
+      return _mapToApplicationWithDetails(appResponse);
     } catch (e) {
       throw Exception('Failed to update application status: $e');
     }
@@ -210,8 +242,6 @@ class ApplicationService {
       helperId: data['helper_id'] as String,
       helperName: '', // Will be filled when needed
       helperLocation: '', // Will be filled when needed
-      helperRating: 4.5, // Default rating - replace with actual rating system
-      helperReviewsCount: 0, // Default - replace with actual review count
       coverLetter: data['cover_letter'] as String,
       appliedDate: DateTime.parse(data['applied_at'] as String),
       status: data['status'] as String,
@@ -233,8 +263,6 @@ class ApplicationService {
       helperEmail: helper['email'] as String?,
       helperPhone: helper['phone'] as String?,
       helperLocation: helper['barangay'] as String,
-      helperRating: 4.5, // Default rating - replace with actual rating system
-      helperReviewsCount: 0, // Default - replace with actual review count
       coverLetter: data['cover_letter'] as String,
       appliedDate: DateTime.parse(data['applied_at'] as String),
       status: data['status'] as String,
@@ -253,8 +281,6 @@ class ApplicationService {
       helperId: data['helper_id'] as String,
       helperName: '', // Not needed for helper's own applications
       helperLocation: '', // Not needed for helper's own applications
-      helperRating: 4.5, // Default rating
-      helperReviewsCount: 0, // Default
       coverLetter: data['cover_letter'] as String,
       appliedDate: DateTime.parse(data['applied_at'] as String),
       status: data['status'] as String,

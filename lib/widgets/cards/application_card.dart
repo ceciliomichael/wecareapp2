@@ -48,32 +48,14 @@ class ApplicationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingStars() {
-    return Row(
-      children: [
-        const Icon(
-          Icons.star,
-          size: 16,
-          color: Color(0xFFFFC107),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          application.helperRating.toString(),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '(${application.helperReviewsCount})',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF6B7280),
-          ),
-        ),
-      ],
+  Widget _buildHelperInfo() {
+    return Text(
+      'Available for hire',
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.green[600],
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 
@@ -161,7 +143,7 @@ class ApplicationCard extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          _buildRatingStars(),
+                          _buildHelperInfo(),
                         ],
                       ),
                     ),

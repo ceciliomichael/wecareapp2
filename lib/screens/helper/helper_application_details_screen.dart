@@ -102,8 +102,6 @@ class _HelperApplicationDetailsScreenState extends State<HelperApplicationDetail
             helperName: _application.helperName,
             helperProfileImage: _application.helperProfileImage,
             helperLocation: _application.helperLocation,
-            helperRating: _application.helperRating,
-            helperReviewsCount: _application.helperReviewsCount,
             coverLetter: _application.coverLetter,
             appliedDate: _application.appliedDate,
             status: 'withdrawn',

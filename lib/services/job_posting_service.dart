@@ -41,6 +41,109 @@ class JobPostingService {
     }
   }
 
+  /// Assign helper to job (when application is accepted)
+  static Future<JobPosting> assignHelperToJob({
+    required String jobId,
+    required String helperId,
+    required String helperName,
+  }) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .update({
+            'status': 'in_progress',
+            'assigned_helper_id': helperId,
+            'assigned_helper_name': helperName,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', jobId)
+          .select()
+          .single();
+
+      return JobPosting.fromMap(response);
+    } catch (e) {
+      throw Exception('Failed to assign helper to job: $e');
+    }
+  }
+
+  /// Mark job as completed
+  static Future<JobPosting> markJobAsCompleted(String jobId) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .update({
+            'status': 'completed',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', jobId)
+          .select()
+          .single();
+
+      return JobPosting.fromMap(response);
+    } catch (e) {
+      throw Exception('Failed to mark job as completed: $e');
+    }
+  }
+
+  /// Get jobs that are in progress for a specific helper
+  static Future<List<JobPosting>> getInProgressJobsForHelper(String helperId) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq('assigned_helper_id', helperId)
+          .eq('status', 'in_progress')
+          .order('updated_at', ascending: false);
+
+      return (response as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch in-progress jobs for helper: $e');
+    }
+  }
+
+  /// Get jobs that are in progress for a specific employer
+  static Future<List<JobPosting>> getInProgressJobsForEmployer(String employerId) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq('employer_id', employerId)
+          .eq('status', 'in_progress')
+          .order('updated_at', ascending: false);
+
+      return (response as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch in-progress jobs for employer: $e');
+    }
+  }
+
+  /// Get completed jobs for rating purposes
+  static Future<List<JobPosting>> getCompletedJobsForUser({
+    required String userId,
+    required String userType, // 'employer' or 'helper'
+  }) async {
+    try {
+      String filterField = userType == 'employer' ? 'employer_id' : 'assigned_helper_id';
+      
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq(filterField, userId)
+          .eq('status', 'completed')
+          .order('updated_at', ascending: false);
+
+      return (response as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch completed jobs: $e');
+    }
+  }
+
   /// Get all job postings for a specific employer
   static Future<List<JobPosting>> getJobPostingsByEmployer(String employerId) async {
     try {

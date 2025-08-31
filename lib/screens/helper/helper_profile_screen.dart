@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/helper.dart';
+import '../../models/rating_statistics.dart';
 import '../../services/session_service.dart';
 import '../../services/helper_auth_service.dart';
+import '../../services/rating_service.dart';
+import '../../widgets/rating/rating_summary.dart';
 import '../role_selection_screen.dart';
+import '../rating/user_ratings_screen.dart';
 import 'edit_helper_profile_screen.dart';
 import 'helper_subscription_screen.dart';
 
@@ -14,7 +18,9 @@ class HelperProfileScreen extends StatefulWidget {
 }
 
 class _HelperProfileScreenState extends State<HelperProfileScreen> {
+  final _ratingService = RatingService();
   Helper? _currentHelper;
+  RatingStatistics? _ratingStats;
   bool _isLoading = true;
 
   @override
@@ -35,16 +41,32 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
             // Update session with fresh data
             await SessionService.updateCurrentUser(freshHelper.toMap());
           }
+          final finalHelper = freshHelper ?? helper;
+          
+          // Load rating statistics
+          final stats = await _ratingService.getUserRatingStatistics(
+            finalHelper.id,
+            'helper',
+          );
+          
           if (mounted) {
             setState(() {
-              _currentHelper = freshHelper ?? helper;
+              _currentHelper = finalHelper;
+              _ratingStats = stats;
               _isLoading = false;
             });
           }
         } else {
+          // Load rating statistics for cached helper
+          final stats = await _ratingService.getUserRatingStatistics(
+            helper.id,
+            'helper',
+          );
+          
           if (mounted) {
             setState(() {
               _currentHelper = helper;
+              _ratingStats = stats;
               _isLoading = false;
             });
           }
@@ -274,7 +296,66 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Rating Statistics
+                if (_ratingStats != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'My Ratings & Reviews',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFFF8A50),
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UserRatingsScreen(
+                                      userId: _currentHelper!.id,
+                                      userType: 'helper',
+                                      userName: _currentHelper!.fullName,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'View All',
+                                style: TextStyle(
+                                  color: Color(0xFFFF8A50),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        RatingSummary(
+                          statistics: _ratingStats!,
+                          showDistribution: false,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
 
                 // Action Buttons
                 Column(

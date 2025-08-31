@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/conversation.dart';
 import '../../models/message.dart';
+import '../../models/job_offer.dart';
 import '../../services/database_messaging_service.dart';
 import '../../services/realtime_messaging_service.dart';
+import '../../services/job_offer_service.dart';
 import '../../widgets/messaging/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -25,6 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<Message> _messages = [];
+  List<JobOffer> _jobOffers = [];
   bool _isLoading = true;
   bool _isSending = false;
 
@@ -32,8 +35,22 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    _loadJobOffers();
     _markMessagesAsRead();
     _startRealtimePolling();
+  }
+
+  Future<void> _loadJobOffers() async {
+    try {
+      final offers = await JobOfferService.getJobOffersForConversation(widget.conversation.id);
+      if (mounted) {
+        setState(() {
+          _jobOffers = offers;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   @override
@@ -259,24 +276,33 @@ class _ChatScreenState extends State<ChatScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _messages.isEmpty
+                  : _messages.isEmpty && _jobOffers.isEmpty
                       ? _buildEmptyMessages()
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          itemCount: _messages.length,
+                          itemCount: _messages.length + _jobOffers.length,
                           itemBuilder: (context, index) {
-                            final message = _messages[index];
-                            final isCurrentUser = message.senderId == widget.currentUserId;
-                            
-                            return MessageBubble(
-                              message: message,
-                              isCurrentUser: isCurrentUser,
-                              showSenderName: !isCurrentUser,
-                            );
+                            // First show job offers, then messages
+                            if (index < _jobOffers.length) {
+                              final jobOffer = _jobOffers[index];
+                              return _buildJobOfferCard(jobOffer);
+                            } else {
+                              final messageIndex = index - _jobOffers.length;
+                              final message = _messages[messageIndex];
+                              final isCurrentUser = message.senderId == widget.currentUserId;
+                              
+                              return MessageBubble(
+                                message: message,
+                                isCurrentUser: isCurrentUser,
+                                showSenderName: !isCurrentUser,
+                              );
+                            }
                           },
                         ),
             ),
+
+
 
             // Message input
             Container(
@@ -394,5 +420,237 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
+  }
+
+
+
+  Widget _buildJobOfferCard(JobOffer jobOffer) {
+    final isFromCurrentUser = jobOffer.employerId == widget.currentUserId;
+    final canRespond = !isFromCurrentUser && jobOffer.isPending;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Icon(
+                    Icons.work,
+                    color: jobOffer.isAccepted 
+                        ? Colors.green 
+                        : jobOffer.isRejected 
+                            ? Colors.red 
+                            : Colors.orange,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Job Offer: ${jobOffer.title}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: jobOffer.isAccepted 
+                          ? Colors.green.shade100 
+                          : jobOffer.isRejected 
+                              ? Colors.red.shade100 
+                              : Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      jobOffer.statusDisplayText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: jobOffer.isAccepted 
+                            ? Colors.green.shade700 
+                            : jobOffer.isRejected 
+                                ? Colors.red.shade700 
+                                : Colors.orange.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Job details
+              Text(
+                jobOffer.description,
+                style: const TextStyle(fontSize: 14),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Salary: ${jobOffer.formattedSalary}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    jobOffer.paymentFrequency,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Text(
+                'Location: ${jobOffer.location}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              
+              // Action buttons for helpers
+              if (canRespond) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _rejectJobOffer(jobOffer),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        child: const Text('Decline'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _acceptJobOffer(jobOffer),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Accept'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  Future<void> _acceptJobOffer(JobOffer jobOffer) async {
+    try {
+      await JobOfferService.acceptJobOffer(jobOffer.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Job offer accepted! Your service posting has been paused.'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+      
+      // Refresh job offers
+      _loadJobOffers();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to accept job offer: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectJobOffer(JobOffer jobOffer) async {
+    String reasonText = '';
+    
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Decline Job Offer'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Why are you declining this offer?'),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'Optional reason...',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => reasonText = value,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, reasonText.isEmpty ? 'No reason provided' : reasonText),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+
+    if (reason != null) {
+      try {
+        await JobOfferService.rejectJobOffer(jobOffer.id, reason);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job offer declined.'),
+            ),
+          );
+        }
+        
+        // Refresh job offers
+        _loadJobOffers();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to decline job offer: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

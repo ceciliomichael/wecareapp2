@@ -1,23 +1,61 @@
 import 'package:flutter/material.dart';
 import '../../models/helper_service_posting.dart';
+import '../../models/rating_statistics.dart';
+import '../../services/rating_service.dart';
+import '../rating/star_rating_display.dart';
 
-class HelperServicePostingCard extends StatelessWidget {
+class HelperServicePostingCard extends StatefulWidget {
   final HelperServicePosting servicePosting;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
+  final bool showRating;
 
   const HelperServicePostingCard({
     super.key,
     required this.servicePosting,
     this.onTap,
     this.onEdit,
+    this.showRating = true,
   });
+
+  @override
+  State<HelperServicePostingCard> createState() => _HelperServicePostingCardState();
+}
+
+class _HelperServicePostingCardState extends State<HelperServicePostingCard> {
+  final _ratingService = RatingService();
+  RatingStatistics? _ratingStats;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showRating) {
+      _loadRatingStats();
+    }
+  }
+
+  Future<void> _loadRatingStats() async {
+    try {
+      final stats = await _ratingService.getUserRatingStatistics(
+        widget.servicePosting.helperId,
+        'helper',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _ratingStats = stats;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
 
   Widget _buildSkillsChips() {
     return Wrap(
       spacing: 6,
       runSpacing: 6,
-      children: servicePosting.skills.take(3).map((skill) {
+      children: widget.servicePosting.skills.take(3).map((skill) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -44,9 +82,9 @@ class HelperServicePostingCard extends StatelessWidget {
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(16),
-        shadowColor: servicePosting.statusColor.withValues(alpha: 0.1),
+        shadowColor: widget.servicePosting.statusColor.withValues(alpha: 0.1),
         child: InkWell(
-          onTap: onTap,
+          onTap: widget.onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.all(20),
@@ -66,7 +104,7 @@ class HelperServicePostingCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        servicePosting.title,
+                        widget.servicePosting.title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -77,19 +115,19 @@ class HelperServicePostingCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: servicePosting.statusColor.withValues(alpha: 0.1),
+                        color: widget.servicePosting.statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: servicePosting.statusColor.withValues(alpha: 0.3),
+                          color: widget.servicePosting.statusColor.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
                       child: Text(
-                        servicePosting.statusDisplayText,
+                        widget.servicePosting.statusDisplayText,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: servicePosting.statusColor,
+                          color: widget.servicePosting.statusColor,
                         ),
                       ),
                     ),
@@ -100,7 +138,7 @@ class HelperServicePostingCard extends StatelessWidget {
 
                 // Description
                 Text(
-                  servicePosting.description,
+                  widget.servicePosting.description,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF6B7280),
@@ -111,6 +149,65 @@ class HelperServicePostingCard extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
+
+                // Helper rating (if enabled)
+                if (widget.showRating) ...[
+                  if (_ratingStats != null && _ratingStats!.hasRatings) ...[
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Color(0xFFFF8A50),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.servicePosting.helperName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        StarRatingDisplay(
+                          rating: _ratingStats!.averageRating,
+                          totalRatings: _ratingStats!.totalRatings,
+                          size: 14,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (_ratingStats != null) ...[
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Color(0xFFFF8A50),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.servicePosting.helperName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'No ratings yet',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
 
                 // Skills and Rate
                 Row(
@@ -152,7 +249,7 @@ class HelperServicePostingCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            servicePosting.formatRate(),
+                            widget.servicePosting.formatRate(),
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -178,7 +275,7 @@ class HelperServicePostingCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        servicePosting.serviceAreasText,
+                        widget.servicePosting.serviceAreasText,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -192,7 +289,7 @@ class HelperServicePostingCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        servicePosting.availability,
+                        widget.servicePosting.availability,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -221,7 +318,7 @@ class HelperServicePostingCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${servicePosting.viewsCount} views',
+                                '${widget.servicePosting.viewsCount} views',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -235,7 +332,7 @@ class HelperServicePostingCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${servicePosting.contactsCount} contacts',
+                                '${widget.servicePosting.contactsCount} contacts',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -245,7 +342,7 @@ class HelperServicePostingCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            servicePosting.formatCreatedDate(),
+                            widget.servicePosting.formatCreatedDate(),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[500],
@@ -254,14 +351,14 @@ class HelperServicePostingCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (onEdit != null)
+                    if (widget.onEdit != null)
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
-                          onPressed: onEdit,
+                          onPressed: widget.onEdit,
                           icon: const Icon(
                             Icons.edit_outlined,
                             color: Color(0xFFFF8A50),

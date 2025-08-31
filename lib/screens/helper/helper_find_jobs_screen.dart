@@ -6,6 +6,7 @@ import '../../services/application_service.dart';
 import '../../services/session_service.dart';
 import '../../utils/constants/barangay_constants.dart';
 import '../../utils/constants/payment_frequency_constants.dart';
+import '../../widgets/cards/job_card_with_rating.dart';
 import 'apply_job_screen.dart';
 
 class HelperFindJobsScreen extends StatefulWidget {
@@ -509,199 +510,20 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         itemCount: _filteredJobs.length,
         itemBuilder: (context, index) {
-          return _buildJobCard(_filteredJobs[index]);
+          final job = _filteredJobs[index];
+          return JobCardWithRating(
+            job: job,
+            hasApplied: _appliedJobIds.contains(job.id),
+            onTap: () => _onJobTap(job),
+          );
         },
       ),
     );
   }
 
-  Widget _buildJobCard(JobPosting job) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        elevation: 2,
-        borderRadius: BorderRadius.circular(16),
-        shadowColor: const Color(0xFFFF8A50).withValues(alpha: 0.1),
-        child: InkWell(
-          onTap: () => _onJobTap(job),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.white,
-              border: Border.all(
-                color: const Color(0xFFE5E7EB),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title and salary
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        job.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '₱${job.salary.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 8),
 
-                // Payment frequency and location
-                Row(
-                  children: [
-                    Text(
-                      PaymentFrequencyConstants.frequencyLabels[job.paymentFrequency] ?? job.paymentFrequency,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 14,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      job.barangay,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 12),
-
-                // Description
-                Text(
-                  job.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 12),
-
-                // Required skills
-                if (job.requiredSkills.isNotEmpty) ...[
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: job.requiredSkills.take(3).map((skill) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF8A50).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          skill,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFFF8A50),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                                 // Posted date and apply button
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     Text(
-                       'Posted ${_formatDate(job.createdAt)}',
-                       style: TextStyle(
-                         fontSize: 12,
-                         color: Colors.grey[500],
-                       ),
-                     ),
-                     _appliedJobIds.contains(job.id)
-                         ? Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                             decoration: BoxDecoration(
-                               color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                               borderRadius: BorderRadius.circular(8),
-                               border: Border.all(
-                                 color: const Color(0xFF10B981),
-                                 width: 1,
-                               ),
-                             ),
-                             child: const Text(
-                               'Applied',
-                               style: TextStyle(
-                                 fontSize: 12,
-                                 fontWeight: FontWeight.bold,
-                                 color: Color(0xFF10B981),
-                               ),
-                             ),
-                           )
-                         : ElevatedButton(
-                             onPressed: () => _onJobTap(job),
-                             style: ElevatedButton.styleFrom(
-                               backgroundColor: const Color(0xFFFF8A50),
-                               foregroundColor: Colors.white,
-                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                               shape: RoundedRectangleBorder(
-                                 borderRadius: BorderRadius.circular(8),
-                               ),
-                             ),
-                             child: const Text(
-                               'Apply',
-                               style: TextStyle(
-                                 fontSize: 12,
-                                 fontWeight: FontWeight.bold,
-                               ),
-                             ),
-                           ),
-                   ],
-                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date).inDays;
-    
-    if (difference == 0) return 'today';
-    if (difference == 1) return 'yesterday';
-    if (difference < 7) return '$difference days ago';
-    if (difference < 30) return '${(difference / 7).floor()} weeks ago';
-    return '${(difference / 30).floor()} months ago';
-  }
 
   @override
   Widget build(BuildContext context) {

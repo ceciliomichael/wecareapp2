@@ -35,6 +35,7 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+  bool _isPickingFile = false;
 
   @override
   void dispose() {
@@ -48,6 +49,20 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
   }
 
   Future<void> _pickBarangayClearance() async {
+    // Prevent multiple concurrent file picks
+    if (_isPickingFile) {
+      _showErrorMessage('File picker is already open. Please wait for the current operation to complete.');
+      return;
+    }
+
+    // Check if file picker is already active globally
+    if (FilePickerService.isPickerActive) {
+      _showErrorMessage('Another file picker operation is in progress. Please wait and try again.');
+      return;
+    }
+
+    setState(() => _isPickingFile = true);
+
     try {
       // Get both filename and base64 data in single call
       final result = await FilePickerService.pickImageWithBase64();
@@ -57,15 +72,36 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
           _barangayClearanceFileName = result.fileName;
           _barangayClearanceBase64 = result.base64Data;
         });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File "${result.fileName}" uploaded successfully!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
+      
+      String errorMessage = e.toString();
+      // Remove "Exception: " prefix if present
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11);
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingFile = false);
+      }
     }
   }
 
@@ -241,8 +277,11 @@ class _EmployerRegisterScreenState extends State<EmployerRegisterScreen> {
               FileUploadField(
                 label: 'Barangay Clearance Image',
                 fileName: _barangayClearanceFileName,
-                onTap: _pickBarangayClearance,
-                placeholder: 'Upload Barangay Clearance Image (JPG, PNG)',
+                onTap: _isPickingFile ? null : _pickBarangayClearance,
+                placeholder: _isPickingFile 
+                    ? 'Selecting file...' 
+                    : 'Upload Barangay Clearance Image (JPG, PNG)',
+                isLoading: _isPickingFile,
               ),
 
               // Security Section

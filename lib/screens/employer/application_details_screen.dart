@@ -100,8 +100,6 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
             helperName: _application.helperName,
             helperProfileImage: _application.helperProfileImage,
             helperLocation: _application.helperLocation,
-            helperRating: _application.helperRating,
-            helperReviewsCount: _application.helperReviewsCount,
             coverLetter: _application.coverLetter,
             appliedDate: _application.appliedDate,
             status: status,
@@ -367,22 +365,13 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star,
-                          size: 16,
-                          color: Colors.amber[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_application.helperRating.toStringAsFixed(1)} (${_application.helperReviewsCount} reviews)',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Available for hire',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
