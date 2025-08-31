@@ -148,85 +148,52 @@ class _EmailPhoneTextFieldState extends State<EmailPhoneTextField> {
   }
 
   Widget _buildPhoneInput() {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // +63 Prefix Container that grows with error
-          Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Center(
-              child: Text(
-                '+63',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: _themeColor,
-                ),
-              ),
+    return TextFormField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(10),
+      ],
+      // Pass combined value (+63 + digits) to validator so it won't complain
+      validator: (raw) => widget.validator?.call(
+        (raw == null || raw.isEmpty) ? '' : '+63$raw',
+      ),
+      decoration: InputDecoration(
+        hintText: 'Enter 10-digit number',
+        hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+        prefixIcon: Container(
+          width: 80,
+          alignment: Alignment.center,
+          child: Text(
+            '+63',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _themeColor,
             ),
           ),
-          // Phone Number Input Field
-          Expanded(
-            child: TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-              // Pass combined value (+63 + digits) to validator so it won't complain
-              validator: (raw) => widget.validator?.call(
-                (raw == null || raw.isEmpty) ? '' : '+63$raw',
-              ),
-              decoration: InputDecoration(
-                hintText: 'Enter 10-digit number',
-                hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
-                filled: true,
-                fillColor: const Color(0xFFF5F5F5),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  borderSide: BorderSide(color: _themeColor, width: 2),
-                ),
-                errorBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  borderSide: BorderSide(color: Colors.red, width: 1),
-                ),
-                focusedErrorBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  borderSide: BorderSide(color: Colors.red, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                errorStyle: const TextStyle(fontSize: 12, height: 1.2),
-              ),
-            ),
-          ),
-        ],
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF5F5F5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _themeColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        errorStyle: const TextStyle(fontSize: 12, height: 1.2),
       ),
     );
   }

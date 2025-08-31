@@ -289,82 +289,93 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
           builder: (context, child) {
             return Opacity(
               opacity: _fadeAnimation.value,
-              child: Column(
-                children: [
-                  const SizedBox(height: 60),
-                  // Logo Section
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: Image.asset(
-                      'assets/images/wecarelogo.png',
-                      fit: BoxFit.contain,
-                    ),
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height - 
+                               MediaQuery.of(context).padding.top - 
+                               MediaQuery.of(context).padding.bottom,
                   ),
-                  const SizedBox(height: 16),
-                  // Title Section
-                  const Text(
-                    'Welcome to WeCare',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1565C0),
-                      letterSpacing: 0.8,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      'Choose your role to get started with the perfect care solution',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF546E7A),
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-                  // Role Selection Cards
-                  Expanded(
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        children: [
-                          _buildRoleCard(
-                            role: 'Employer',
-                            description: 'Find trusted caregivers and household help for your family',
-                            icon: Icons.business_center,
-                            color: const Color(0xFF1E88E5),
-                            onTap: () => _selectRole('Employer'),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 60),
+                        // Logo Section
+                        SizedBox(
+                          width: 120,
+                          height: 120,
+                          child: Image.asset(
+                            'assets/images/wecarelogo.png',
+                            fit: BoxFit.contain,
                           ),
-                          const SizedBox(height: 20),
-                          _buildRoleCard(
-                            role: 'Helper',
-                            description: 'Offer your services as a caregiver or household assistant',
-                            icon: Icons.favorite,
-                            color: const Color(0xFFFF8A50),
-                            onTap: () => _selectRole('Helper'),
+                        ),
+                        const SizedBox(height: 16),
+                        // Title Section
+                        const Text(
+                          'Welcome to WeCare',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1565C0),
+                            letterSpacing: 0.8,
                           ),
-                        ],
-                      ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            'Choose your role to get started with the perfect care solution',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF546E7A),
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 60),
+                        // Role Selection Cards
+                        Expanded(
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              children: [
+                                _buildRoleCard(
+                                  role: 'Employer',
+                                  description: 'Find trusted caregivers and household help for your family',
+                                  icon: Icons.business_center,
+                                  color: const Color(0xFF1E88E5),
+                                  onTap: () => _selectRole('Employer'),
+                                ),
+                                const SizedBox(height: 20),
+                                _buildRoleCard(
+                                  role: 'Helper',
+                                  description: 'Offer your services as a caregiver or household assistant',
+                                  icon: Icons.favorite,
+                                  color: const Color(0xFFFF8A50),
+                                  onTap: () => _selectRole('Helper'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Footer
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'By continuing, you agree to our Terms of Service and Privacy Policy',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  // Footer
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'By continuing, you agree to our Terms of Service and Privacy Policy',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },
