@@ -8,6 +8,17 @@
     <!-- WiFi state permission to check WiFi status -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     
+    <!-- File picker permissions for accessing device storage -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    
+    <!-- Media permissions for accessing images -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    
+    <!-- Camera permission for taking photos (optional for file picker) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
     <application
         android:label="wecareapp"
         android:name="${applicationName}"

@@ -13,7 +13,7 @@ import '../utils/validators/form_validators.dart';
 import '../services/file_picker_service.dart';
 import '../services/helper_auth_service.dart';
 import '../services/supabase_service.dart';
-import 'helper_dashboard_screen.dart';
+import 'login_screen.dart';
 
 class HelperRegisterScreen extends StatefulWidget {
   const HelperRegisterScreen({super.key});
@@ -69,10 +69,13 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
     setState(() => _isPickingFile = true);
 
     try {
+      debugPrint('DEBUG: Starting file picker...');
       // Get both filename and base64 data in single call
       final result = await FilePickerService.pickImageWithBase64();
+      debugPrint('DEBUG: File picker result: ${result != null ? 'Success' : 'Cancelled'}');
       
       if (result != null && mounted) {
+        debugPrint('DEBUG: File selected - Name: ${result.fileName}, Base64 length: ${result.base64Data.length}');
         setState(() {
           _barangayClearanceFileName = result.fileName;
           _barangayClearanceBase64 = result.base64Data;
@@ -86,8 +89,12 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
             duration: const Duration(seconds: 2),
           ),
         );
+        debugPrint('DEBUG: File upload state updated successfully');
+      } else if (result == null) {
+        debugPrint('DEBUG: File selection was cancelled by user');
       }
     } catch (e) {
+      debugPrint('DEBUG: File picker error: $e');
       if (!mounted) return;
       
       String errorMessage = e.toString();
@@ -144,6 +151,10 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
       return;
     }
 
+    debugPrint('DEBUG: Starting registration process...');
+    debugPrint('DEBUG: Base64 data length: ${_barangayClearanceBase64?.length ?? 0}');
+    debugPrint('DEBUG: File name: $_barangayClearanceFileName');
+
     setState(() => _isLoading = true);
 
     try {
@@ -153,6 +164,7 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
         phoneNumber = '+63$phoneNumber';
       }
 
+      debugPrint('DEBUG: Calling HelperAuthService.registerHelper...');
       final result = await HelperAuthService.registerHelper(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
@@ -165,22 +177,26 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
         barangayClearanceBase64: _barangayClearanceBase64,
       );
 
+      debugPrint('DEBUG: Registration result: ${result['success']}');
+      debugPrint('DEBUG: Registration message: ${result['message']}');
+
       if (!mounted) return;
 
       if (result['success']) {
         // Registration successful
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message']),
+            content: Text('${result['message']} Please log in to continue.'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
           ),
         );
 
-        // Navigate to helper dashboard
+        // Navigate to login screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const HelperDashboardScreen(),
+            builder: (context) => const LoginScreen(userType: 'Helper'),
           ),
         );
       } else {
@@ -188,6 +204,7 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
         _showErrorMessage(result['message']);
       }
     } catch (e) {
+      debugPrint('DEBUG: Registration exception: $e');
       if (!mounted) return;
       _showErrorMessage('Registration failed: $e');
     } finally {
@@ -303,7 +320,9 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
 
               BarangayDropdown(
                 selectedBarangay: _selectedBarangay,
-                barangayList: BarangayConstants.tagbilaranBarangays,
+                barangayList: LocationConstants.boholMunicipalities,
+                label: 'Municipality in Bohol',
+                hint: 'Select Municipality',
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBarangay = value;

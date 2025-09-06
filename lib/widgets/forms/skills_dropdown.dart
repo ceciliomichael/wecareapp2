@@ -12,6 +12,26 @@ class SkillsDropdown extends StatelessWidget {
     required this.onChanged,
   });
 
+  // Helper method to get icon for each skill
+  IconData _getSkillIcon(String skill) {
+    switch (skill) {
+      case 'Cleaning':
+        return Icons.cleaning_services;
+      case 'Cooking':
+        return Icons.restaurant;
+      case 'Childcare':
+        return Icons.child_friendly;
+      case 'Elderly Care':
+        return Icons.elderly;
+      case 'Driving':
+        return Icons.drive_eta;
+      case 'All-Around':
+        return Icons.handyman;
+      default:
+        return Icons.work;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -45,7 +65,17 @@ class SkillsDropdown extends StatelessWidget {
               items: skillsList.map((String skill) {
                 return DropdownMenuItem<String>(
                   value: skill,
-                  child: Text(skill),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _getSkillIcon(skill),
+                        color: Color(0xFF1565C0),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(skill),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: onChanged,

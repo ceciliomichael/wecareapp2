@@ -384,7 +384,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 // Barangay
                 BarangayDropdown(
                   selectedBarangay: _selectedBarangay,
-                  barangayList: BarangayConstants.tagbilaranBarangays,
+                  barangayList: LocationConstants.tagbilaranBarangays,
                   onChanged: (value) {
                     setState(() {
                       _selectedBarangay = value;

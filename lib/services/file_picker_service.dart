@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
 class ImagePickerResult {
@@ -31,8 +32,18 @@ class FilePickerService {
         allowedExtensions: null, // Allow all image types
       );
 
-      if (result != null && result.files.single.bytes != null) {
-        Uint8List fileBytes = result.files.single.bytes!;
+      if (result != null && result.files.single.path != null) {
+        Uint8List fileBytes;
+        
+        // Handle mobile vs web differently
+        if (result.files.single.bytes != null) {
+          // Web: bytes are directly available
+          fileBytes = result.files.single.bytes!;
+        } else {
+          // Mobile: need to read from file path
+          final file = File(result.files.single.path!);
+          fileBytes = await file.readAsBytes();
+        }
         
         // Validate file size (max 5MB)
         if (fileBytes.length > 5 * 1024 * 1024) {
@@ -85,8 +96,18 @@ class FilePickerService {
         allowMultiple: false,
       );
 
-      if (result != null && result.files.single.bytes != null) {
-        Uint8List fileBytes = result.files.single.bytes!;
+      if (result != null && result.files.single.path != null) {
+        Uint8List fileBytes;
+        
+        // Handle mobile vs web differently
+        if (result.files.single.bytes != null) {
+          // Web: bytes are directly available
+          fileBytes = result.files.single.bytes!;
+        } else {
+          // Mobile: need to read from file path
+          final file = File(result.files.single.path!);
+          fileBytes = await file.readAsBytes();
+        }
         
         // Validate file size (max 5MB)
         if (fileBytes.length > 5 * 1024 * 1024) {

@@ -135,7 +135,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: paymentFrequency,
+                          initialValue: paymentFrequency,
                           decoration: const InputDecoration(
                             labelText: 'Payment',
                             border: OutlineInputBorder(),

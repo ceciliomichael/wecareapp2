@@ -1,4 +1,4 @@
-class BarangayConstants {
+class LocationConstants {
   static const List<String> tagbilaranBarangays = [
     'Bool',
     'Booy',
@@ -16,4 +16,60 @@ class BarangayConstants {
     'Tiptip',
     'Ubujan',
   ];
+
+  static const List<String> boholMunicipalities = [
+    'Alburquerque',
+    'Alicia',
+    'Anda',
+    'Antequera',
+    'Baclayon',
+    'Balilihan',
+    'Batuan',
+    'Bien Unido',
+    'Bilar',
+    'Buenavista',
+    'Calape',
+    'Candijay',
+    'Carmen',
+    'Catigbian',
+    'Clarin',
+    'Corella',
+    'Cortes',
+    'Dagohoy',
+    'Danao',
+    'Dauis',
+    'Dimiao',
+    'Duero',
+    'Garcia Hernandez',
+    'Getafe',
+    'Guindulman',
+    'Inabanga',
+    'Jagna',
+    'Lila',
+    'Loay',
+    'Loboc',
+    'Loon',
+    'Mabini',
+    'Maribojoc',
+    'Panglao',
+    'Pilar',
+    'President Carlos P. Garcia',
+    'Sagbayan',
+    'San Isidro',
+    'San Miguel',
+    'Sevilla',
+    'Sierra Bullones',
+    'Sikatuna',
+    'Talibon',
+    'Trinidad',
+    'Tubigon',
+    'Ubay',
+    'Valencia',
+  ];
+}
+
+// For backward compatibility
+@Deprecated('Use LocationConstants instead')
+class BarangayConstants {
+  static const List<String> tagbilaranBarangays = LocationConstants.tagbilaranBarangays;
 }

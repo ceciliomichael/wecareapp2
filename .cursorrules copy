@@ -1,0 +1,105 @@
+</repo_specific_rule>
+
+<system_rules>
+
+Always start with a <think></think> block to analyze and understand the user's request, including scope, requirements, and expected deliverables. This is the MOST CRITICAL requirement that must be executed first for EVERY single task, query, or request without exception.
+
+<workflow_steps>
+# Follow these steps in order to execute the user's task:
+
+1. Always start with analyzing and restating the user's query or task to remain in scope.
+2. Use the mcp_taskmaster_load_memory to load the memory if it exists.
+3. Use the mcp_taskmaster_list_docs to see available documents.
+4. Use the mcp_taskmaster_get_docs to read applicable documents.
+5. Use the mcp_filesys_check_structure to see the project structure. Note: What is shown is what exists. Do not make up any files or directories.
+6. Use the mcp_filesys_batch_read to read applicable files in batch reading mode for efficiency.
+7. With all the information gathered, generate a clear and concise plan of action to execute the user's task.
+8. Create a mermaid sequence diagram using participants as swimlanes to show implementation flow between system components (like User, API, Database), include arrows for interactions, use loops where needed, and add notes for clarity - this visualizes the architecture and operation sequence for implementation planning.
+
+</workflow_steps>
+
+<design_rules>
+
+DESIGN PRINCIPLES:
+• Use FLAT UI design principles with 3D effects for depth
+• Use OKLCH color space for all color definitions (CSS only)
+• Mobile-first responsive design with desktop support
+• No floating elements (e.g. floating icons, interactive elements, shapes, images, etc.)
+• Do not use GRADIENTS - only use solid colors
+• Maintain smooth, modern aesthetics with purposeful depth cues
+• Never use emoji - only Lucide icons or other reputable icon libraries
+
+COLOR SYSTEM:
+• Primary colors in OKLCH format (lightness chroma hue) - CSS only
+• Consistent color palette across all components
+• Accessible contrast ratios for all text and UI elements
+
+LAYOUT GUIDELINES:
+• Mobile-first approach (320px+)
+• Progressive enhancement for tablet (768px+) and desktop (1024px+)
+• Flexible grid systems and responsive typography
+• Touch-friendly interactive elements (44px minimum)
+• Full viewport height layouts (100vh) for immersive experiences
+• Line height should be 1.3 for optimal readability
+• Use exact viewport units (h-screen) instead of minimum heights for hero sections
+• Avoid combining section-padding with full viewport heights to prevent unwanted scrolling
+• Center content with flexbox (flex items-center justify-center) for perfect alignment
+• Use container class for consistent max-width and horizontal padding across sections
+
+TAILWIND:
+• NEVER use direct color classes (text-white, bg-white, text-black, bg-black) - only semantic tokens
+• Use OKLCH color format exclusively for CSS custom properties in globals.css
+• Define CSS variables with --variable-name syntax, reference with oklch(var(--variable-name))
+• Apply transparency with oklch(var(--variable-name) / 0.3) syntax
+• In tailwind.config.js, reference CSS custom properties without function wrapping
+• Match color format exactly between globals.css and tailwind.config.js
+• Use semantic classes only (bg-primary, text-primary-foreground) in components
+• All styling must flow through centralized design system tokens
+• Use tailwind.config.js only for projects where NPM install is possible
+• Create comprehensive token system covering colors, gradients, shadows, animations
+• Always use focus-visible instead of focus for cleaner UX (keyboard-only focus rings)
+
+</design_rules>
+
+<after_development>
+
+<save_memory description="This is the most crucial part that the agent must follow and it is to save the memory of the task that the agent has done">
+MANDATORY: After completing ANY development task, code implementation, file creation, modification, or technical work regardless of size or complexity, you MUST use save_memory to store a very brief, very concise but detailed summary of what was accomplished. 
+
+This applies to ALL development activities of any scale including but not limited to:
+• Creating components, implementing features, fixing bugs
+• Refactoring code, adding functionality, modifying existing code
+• Creating new files, updating configurations
+• Making small edits, minor adjustments, tiny fixes
+• Major implementations, complete feature builds
+• Any other code-related changes whether they are very small single-line modifications or very large comprehensive implementations
+
+The scale or complexity does not matter - ALWAYS save memory for development work. 
+
+DO NOT save memory ONLY for non-development tasks such as:
+• Answering questions without implementation
+• Providing explanations without code changes
+• Committing code to version control
+• Other administrative tasks that don't involve actual development work
+</save_memory>
+
+</after_development>
+
+<nextjs_rules description="This is the nextjs rules that the agent must follow to implement the user's task">
+NEVER USE NEXT_PUBLIC_ PREFIX FOR ANYTHING.
+
+MANDATORY: Always use native HTTP libraries for ALL external API integrations. Third-party SDKs are STRICTLY FORBIDDEN unless the user explicitly and specifically requests their use. Default to native HTTP implementations to maintain full control over requests, responses, error handling, and dependencies. Only deviate from this rule when the user directly asks for a specific SDK or third-party library integration.
+
+MANDATORY: Always use the @/ alias for imports when referencing files within the src directory. This includes components, hooks, utils, services, types, and any other internal modules. Never use relative imports (../../../) - always use the @/ alias for cleaner, more maintainable import statements.
+
+Follow strict file organization: components/ui/ for reusable UI components, components/feature/ for business logic components, hooks/ for custom hooks, utils/ for helper functions, services/ for API calls, types/ for TypeScript definitions, and constants/ for static values. Each file serves ONE purpose in its designated folder.
+
+Always use kebab-case for all file and folder names.
+
+Always create your UI components inside /src/components/ui/component_name/index.tsx
+Always maintain clean file organization and avoid creating spaghetti code.
+</nextjs_rules>
+
+</system_rules>
+
+<repo_specific_rule description="Additional user specific rules the agent should follow">

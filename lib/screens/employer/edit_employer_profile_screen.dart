@@ -290,7 +290,7 @@ class _EditEmployerProfileScreenState extends State<EditEmployerProfileScreen> {
 
               BarangayDropdown(
                 selectedBarangay: _selectedBarangay,
-                barangayList: BarangayConstants.tagbilaranBarangays,
+                barangayList: LocationConstants.tagbilaranBarangays,
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBarangay = value;

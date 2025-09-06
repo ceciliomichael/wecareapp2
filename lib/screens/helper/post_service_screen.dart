@@ -60,7 +60,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
       if (helper != null && mounted) {
         setState(() {
           _currentHelper = helper;
-          // Pre-populate with helper's barangay
+          // Pre-populate with helper's municipality
           _selectedServiceAreas = [helper.barangay];
         });
       }
@@ -224,7 +224,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Select the barangays where you can offer your services',
+          'Select the municipalities in Bohol where you can offer your services',
           style: TextStyle(
             fontSize: 12,
             color: Color(0xFF6B7280),
@@ -244,11 +244,11 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: BarangayConstants.tagbilaranBarangays.map((barangay) {
-                  final isSelected = _selectedServiceAreas.contains(barangay);
+                children: LocationConstants.boholMunicipalities.map((municipality) {
+                  final isSelected = _selectedServiceAreas.contains(municipality);
                   return FilterChip(
                     label: Text(
-                      barangay,
+                      municipality,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -259,9 +259,9 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
                     onSelected: (selected) {
                       setState(() {
                         if (selected) {
-                          _selectedServiceAreas.add(barangay);
+                          _selectedServiceAreas.add(municipality);
                         } else {
-                          _selectedServiceAreas.remove(barangay);
+                          _selectedServiceAreas.remove(municipality);
                         }
                       });
                     },

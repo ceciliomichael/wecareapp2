@@ -4,12 +4,16 @@ class BarangayDropdown extends StatelessWidget {
   final String? selectedBarangay;
   final List<String> barangayList;
   final ValueChanged<String?> onChanged;
+  final String? label;
+  final String? hint;
 
   const BarangayDropdown({
     super.key,
     required this.selectedBarangay,
     required this.barangayList,
     required this.onChanged,
+    this.label,
+    this.hint,
   });
 
   @override
@@ -17,9 +21,9 @@ class BarangayDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Barangay in Tagbilaran City',
-          style: TextStyle(
+        Text(
+          label ?? 'Barangay in Tagbilaran City',
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1565C0),
@@ -36,9 +40,9 @@ class BarangayDropdown extends StatelessWidget {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selectedBarangay,
-              hint: const Text(
-                'Select Barangay',
-                style: TextStyle(color: Color(0xFF9E9E9E)),
+              hint: Text(
+                hint ?? 'Select Barangay',
+                style: const TextStyle(color: Color(0xFF9E9E9E)),
               ),
               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1565C0)),
               isExpanded: true,

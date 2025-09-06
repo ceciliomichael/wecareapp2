@@ -331,7 +331,9 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
 
               BarangayDropdown(
                 selectedBarangay: _selectedBarangay,
-                barangayList: BarangayConstants.tagbilaranBarangays,
+                barangayList: LocationConstants.boholMunicipalities,
+                label: 'Municipality in Bohol',
+                hint: 'Select Municipality',
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBarangay = value;

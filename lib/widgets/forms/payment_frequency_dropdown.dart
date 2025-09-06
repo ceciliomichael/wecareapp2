@@ -39,7 +39,7 @@ class PaymentFrequencyDropdown extends StatelessWidget {
             color: Colors.white,
           ),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             onChanged: onChanged,
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),

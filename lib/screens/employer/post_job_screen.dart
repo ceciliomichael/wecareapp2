@@ -379,7 +379,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 // Barangay
                 BarangayDropdown(
                   selectedBarangay: _selectedBarangay,
-                  barangayList: BarangayConstants.tagbilaranBarangays,
+                  barangayList: LocationConstants.tagbilaranBarangays,
                   onChanged: (value) {
                     setState(() {
                       _selectedBarangay = value;

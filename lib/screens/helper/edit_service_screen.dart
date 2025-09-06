@@ -496,7 +496,7 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
 
             // Availability
             DropdownButtonFormField<String>(
-              value: _selectedAvailability.isEmpty ? null : _selectedAvailability,
+              initialValue: _selectedAvailability.isEmpty ? null : _selectedAvailability,
               decoration: InputDecoration(
                 labelText: 'Availability',
                 labelStyle: const TextStyle(
@@ -664,17 +664,17 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: BarangayConstants.tagbilaranBarangays.map((barangay) {
-              final isSelected = _selectedAreas.contains(barangay);
+            children: LocationConstants.boholMunicipalities.map((municipality) {
+              final isSelected = _selectedAreas.contains(municipality);
               return FilterChip(
-                label: Text(barangay),
+                label: Text(municipality),
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
-                      _selectedAreas.add(barangay);
+                      _selectedAreas.add(municipality);
                     } else {
-                      _selectedAreas.remove(barangay);
+                      _selectedAreas.remove(municipality);
                     }
                   });
                 },

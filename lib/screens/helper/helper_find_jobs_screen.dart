@@ -29,7 +29,7 @@ class _HelperFindJobsScreenState extends State<HelperFindJobsScreen> {
 
   final List<String> _locations = [
     'All Locations',
-    ...BarangayConstants.tagbilaranBarangays,
+    ...LocationConstants.tagbilaranBarangays,
   ];
 
   final List<String> _paymentFrequencies = [
