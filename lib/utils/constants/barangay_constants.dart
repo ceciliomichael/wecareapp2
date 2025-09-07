@@ -60,6 +60,7 @@ class LocationConstants {
     'Sevilla',
     'Sierra Bullones',
     'Sikatuna',
+    'Tagbilaran',
     'Talibon',
     'Trinidad',
     'Tubigon',
