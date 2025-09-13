@@ -334,4 +334,173 @@ class JobPostingService {
       throw Exception('Failed to fetch job posting: $e');
     }
   }
+
+  /// Get recent job postings (latest 20 jobs)
+  static Future<List<JobPosting>> getRecentJobPostings({int limit = 20}) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq('status', 'active')
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      return (response as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch recent job postings: $e');
+    }
+  }
+
+  /// Get best matching jobs for a helper based on skills and location
+  static Future<List<JobPosting>> getBestMatchesForHelper({
+    required String helperSkills,
+    required String helperBarangay,
+    int limit = 10,
+  }) async {
+    try {
+      // Convert helper skills string to list
+      final skillsList = helperSkills
+          .split(',')
+          .map((skill) => skill.trim().toLowerCase())
+          .where((skill) => skill.isNotEmpty)
+          .toList();
+
+      if (skillsList.isEmpty) {
+        // If no skills, return recent jobs in same barangay
+        final response = await SupabaseService.client
+            .from(_tableName)
+            .select()
+            .eq('status', 'active')
+            .eq('barangay', helperBarangay)
+            .order('created_at', ascending: false)
+            .limit(limit);
+
+        return (response as List)
+            .map((data) => JobPosting.fromMap(data))
+            .toList();
+      }
+
+      // Get all active jobs
+      final allJobsResponse = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq('status', 'active')
+          .order('created_at', ascending: false);
+
+      final allJobs = (allJobsResponse as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+
+      // Filter and score jobs based on skill matching and location
+      final List<MapEntry<JobPosting, int>> scoredJobs = [];
+
+      for (final job in allJobs) {
+        int matchScore = 0;
+
+        // Check skill matches (high priority)
+        for (final requiredSkill in job.requiredSkills) {
+          final normalizedRequired = requiredSkill.toLowerCase().trim();
+          for (final helperSkill in skillsList) {
+            if (normalizedRequired.contains(helperSkill) || 
+                helperSkill.contains(normalizedRequired)) {
+              matchScore += 5; // High score for skill match
+            }
+          }
+        }
+
+        // Location matching (medium priority)
+        if (job.barangay == helperBarangay) {
+          matchScore += 3; // Bonus for same barangay
+        }
+
+        // Recent jobs get slight boost (low priority)
+        final daysSincePosted = DateTime.now().difference(job.createdAt).inDays;
+        if (daysSincePosted <= 1) {
+          matchScore += 2; // Bonus for jobs posted today/yesterday
+        } else if (daysSincePosted <= 7) {
+          matchScore += 1; // Small bonus for jobs posted this week
+        }
+
+        // Only include jobs with some match
+        if (matchScore > 0) {
+          scoredJobs.add(MapEntry(job, matchScore));
+        }
+      }
+
+      // Sort by score and take top matches
+      scoredJobs.sort((a, b) => b.value.compareTo(a.value));
+
+      return scoredJobs
+          .take(limit)
+          .map((entry) => entry.key)
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch best matches: $e');
+    }
+  }
+
+  /// Get jobs posted today for "Recent" section emphasis
+  static Future<List<JobPosting>> getTodaysJobPostings() async {
+    try {
+      final today = DateTime.now();
+      final startOfDay = DateTime(today.year, today.month, today.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select()
+          .eq('status', 'active')
+          .gte('created_at', startOfDay.toIso8601String())
+          .lt('created_at', endOfDay.toIso8601String())
+          .order('created_at', ascending: false);
+
+      return (response as List)
+          .map((data) => JobPosting.fromMap(data))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch today\'s job postings: $e');
+    }
+  }
+
+  /// Get trending jobs (jobs with most applications in last 7 days)
+  static Future<List<JobPosting>> getTrendingJobPostings({int limit = 10}) async {
+    try {
+      // Get jobs from last 7 days with application counts
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .select('''
+            *,
+            applications (
+              id
+            )
+          ''')
+          .eq('status', 'active')
+          .gte('created_at', sevenDaysAgo.toIso8601String())
+          .order('created_at', ascending: false);
+
+      final jobsWithCounts = (response as List).map((data) {
+        final applicationCount = (data['applications'] as List).length;
+        final job = JobPosting.fromMap(data);
+        return MapEntry(job, applicationCount);
+      }).toList();
+
+      // Sort by application count (trending), then by creation date
+      jobsWithCounts.sort((a, b) {
+        final countComparison = b.value.compareTo(a.value);
+        if (countComparison != 0) return countComparison;
+        return b.key.createdAt.compareTo(a.key.createdAt);
+      });
+
+      return jobsWithCounts
+          .take(limit)
+          .map((entry) => entry.key)
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch trending job postings: $e');
+    }
+  }
 }

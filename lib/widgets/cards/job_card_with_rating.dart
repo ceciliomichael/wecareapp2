@@ -10,6 +10,8 @@ class JobCardWithRating extends StatefulWidget {
   final VoidCallback? onTap;
   final bool hasApplied;
   final bool showEmployerRating;
+  final bool isSaved;
+  final Function(bool)? onSaveToggle;
 
   const JobCardWithRating({
     super.key,
@@ -17,6 +19,8 @@ class JobCardWithRating extends StatefulWidget {
     this.onTap,
     this.hasApplied = false,
     this.showEmployerRating = true,
+    this.isSaved = false,
+    this.onSaveToggle,
   });
 
   @override
@@ -87,7 +91,7 @@ class _JobCardWithRatingState extends State<JobCardWithRating> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title and salary
+                // Title, salary, and save button
                 Row(
                   children: [
                     Expanded(
@@ -108,6 +112,30 @@ class _JobCardWithRatingState extends State<JobCardWithRating> {
                         color: Color(0xFF10B981),
                       ),
                     ),
+                    if (widget.onSaveToggle != null) ...[
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          widget.onSaveToggle!(!widget.isSaved);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: widget.isSaved 
+                                ? const Color(0xFFFF8A50).withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            widget.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                            size: 20,
+                            color: widget.isSaved 
+                                ? const Color(0xFFFF8A50)
+                                : const Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
 
