@@ -9,6 +9,10 @@ class Message {
   final MessageStatus status;
   final DateTime createdAt;
   final DateTime? readAt;
+  // Location data for location messages
+  final double? latitude;
+  final double? longitude;
+  final String? address;
 
   const Message({
     required this.id,
@@ -21,6 +25,9 @@ class Message {
     required this.status,
     required this.createdAt,
     this.readAt,
+    this.latitude,
+    this.longitude,
+    this.address,
   });
 
   factory Message.fromMap(Map<String, dynamic> map) {
@@ -41,6 +48,9 @@ class Message {
       ),
       createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
       readAt: map['read_at'] != null ? DateTime.parse(map['read_at']) : null,
+      latitude: map['latitude']?.toDouble(),
+      longitude: map['longitude']?.toDouble(),
+      address: map['address'],
     );
   }
 
@@ -56,10 +66,17 @@ class Message {
       'status': status.name,
       'created_at': createdAt.toIso8601String(),
       'read_at': readAt?.toIso8601String(),
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
     };
   }
 
   bool get isRead => readAt != null;
+
+  bool get isLocationMessage => type == MessageType.location;
+
+  bool get hasValidLocation => latitude != null && longitude != null;
 
   Message copyWith({
     String? id,
@@ -72,6 +89,9 @@ class Message {
     MessageStatus? status,
     DateTime? createdAt,
     DateTime? readAt,
+    double? latitude,
+    double? longitude,
+    String? address,
   }) {
     return Message(
       id: id ?? this.id,
@@ -84,6 +104,9 @@ class Message {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       readAt: readAt ?? this.readAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      address: address ?? this.address,
     );
   }
 }
@@ -93,6 +116,7 @@ enum MessageType {
   image,
   file,
   system,
+  location,
 }
 
 enum MessageStatus {

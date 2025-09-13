@@ -5,6 +5,7 @@ import '../../models/job_offer.dart';
 import '../../services/database_messaging_service.dart';
 import '../../services/realtime_messaging_service.dart';
 import '../../services/job_offer_service.dart';
+import '../../services/location_service.dart';
 import '../../widgets/messaging/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<JobOffer> _jobOffers = [];
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isShareLocation = false;
 
   @override
   void initState() {
@@ -188,6 +190,132 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _shareCurrentLocation() async {
+    if (_isShareLocation) return;
+    
+    setState(() {
+      _isShareLocation = true;
+    });
+
+    try {
+      // Check if location permission is already granted
+      final hasPermission = await LocationService.hasLocationPermission();
+      
+      if (!hasPermission) {
+        // Show permission dialog
+        final shouldRequest = await _showLocationPermissionDialog();
+        if (!shouldRequest) {
+          if (mounted) {
+            setState(() {
+              _isShareLocation = false;
+            });
+          }
+          return;
+        }
+      }
+
+      // Get current location
+      final locationData = await LocationService.getCurrentLocation();
+      
+      if (locationData == null) {
+        throw Exception('Unable to get current location');
+      }
+
+      // Send location message
+      final message = await DatabaseMessagingService.sendLocationMessage(
+        conversationId: widget.conversation.id,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        address: locationData.address,
+      );
+
+      if (mounted) {
+        setState(() {
+          _messages.add(message);
+          _isShareLocation = false;
+        });
+
+        _scrollToBottom();
+        
+        // Force refresh to ensure real-time polling updates
+        RealtimeMessagingService.refreshMessages();
+        
+        // Show success feedback
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📍 Location shared successfully'),
+            backgroundColor: Color(0xFF10B981),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isShareLocation = false;
+        });
+
+        String errorMessage = 'Failed to share location';
+        
+        if (e.toString().contains('permissions')) {
+          errorMessage = 'Location permission denied. Please enable location access in settings.';
+        } else if (e.toString().contains('disabled')) {
+          errorMessage = 'Location services are disabled. Please enable GPS.';
+        } else {
+          errorMessage = 'Failed to get location: ${e.toString()}';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: e.toString().contains('permissions') 
+                ? SnackBarAction(
+                    label: 'Settings',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      LocationService.openAppSettings();
+                    },
+                  )
+                : null,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _showLocationPermissionDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_on, color: Color(0xFFE53E3E)),
+            SizedBox(width: 8),
+            Text('Share Location'),
+          ],
+        ),
+        content: const Text(
+          'WeCare needs location access to share your current location with the other person. This helps them find the exact work location.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1565C0),
+            ),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -302,8 +430,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
             ),
 
-
-
             // Message input
             Container(
               padding: const EdgeInsets.all(16),
@@ -319,6 +445,41 @@ class _ChatScreenState extends State<ChatScreen> {
               child: SafeArea(
                 child: Row(
                   children: [
+                    // Location share button
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _isShareLocation 
+                            ? const Color(0xFFE53E3E).withValues(alpha: 0.1)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: _isShareLocation 
+                              ? const Color(0xFFE53E3E).withValues(alpha: 0.3)
+                              : Colors.grey.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: IconButton(
+                        onPressed: _isShareLocation ? null : _shareCurrentLocation,
+                        icon: _isShareLocation
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE53E3E)),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.location_on,
+                                color: Color(0xFFE53E3E),
+                                size: 20,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(

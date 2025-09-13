@@ -139,6 +139,62 @@ class DatabaseMessagingService {
     }
   }
 
+  // Send location message
+  static Future<Message> sendLocationMessage({
+    required String conversationId,
+    required double latitude,
+    required double longitude,
+    required String address,
+  }) async {
+    try {
+      final currentUserId = await SessionService.getCurrentUserId();
+      final currentUserType = await SessionService.getCurrentUserType();
+      
+      if (currentUserId == null || currentUserType == null) {
+        throw Exception('User not found');
+      }
+
+      String senderName;
+      if (currentUserType == 'Employer') {
+        final employer = await SessionService.getCurrentEmployer();
+        senderName = '${employer?.firstName ?? ''} ${employer?.lastName ?? ''}'.trim();
+        if (senderName.isEmpty) senderName = 'Unknown Employer';
+      } else {
+        final helper = await SessionService.getCurrentHelper();
+        senderName = '${helper?.firstName ?? ''} ${helper?.lastName ?? ''}'.trim();
+        if (senderName.isEmpty) senderName = 'Unknown Helper';
+      }
+
+      final messageId = '${DateTime.now().millisecondsSinceEpoch}';
+      final messageData = {
+        'id': messageId,
+        'conversation_id': conversationId,
+        'sender_id': currentUserId,
+        'sender_type': currentUserType,
+        'sender_name': senderName,
+        'content': '📍 $address', // This will be processed by DB trigger
+        'message_type': MessageType.location.name,
+        'status': MessageStatus.sent.name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+      };
+
+      final response = await SupabaseService.client
+          .from(_messagesTable)
+          .insert(messageData)
+          .select()
+          .single();
+
+      final message = _mapToMessage(response);
+      
+      // Conversation last message and unread counters are updated by DB trigger
+      return message;
+    } catch (e) {
+      throw Exception('Failed to send location message: $e');
+    }
+  }
+
   // Get messages for conversation
   static Future<List<Message>> getConversationMessages(String conversationId) async {
     try {
@@ -305,6 +361,9 @@ class DatabaseMessagingService {
       ),
       createdAt: DateTime.parse(data['created_at'] as String).toLocal(),
       readAt: data['read_at'] != null ? DateTime.parse(data['read_at']).toLocal() : null,
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
+      address: data['address'],
     );
   }
 }

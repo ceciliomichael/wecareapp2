@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/message.dart';
+import 'location_message_widget.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -40,79 +41,112 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           
-          // Message bubble
-          Container(
-            decoration: BoxDecoration(
-              color: isCurrentUser 
-                  ? const Color(0xFF1565C0)
-                  : Colors.grey[100],
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isCurrentUser ? 16 : 4),
-                bottomRight: Radius.circular(isCurrentUser ? 4 : 16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: IntrinsicWidth(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Message content
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Text(
-                      message.content,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isCurrentUser 
-                            ? Colors.white 
-                            : Colors.black87,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  
-                  // Message metadata
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatTime(message.createdAt),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isCurrentUser 
-                                ? Colors.white.withValues(alpha: 0.8)
-                                : Colors.grey[600],
-                          ),
-                        ),
-                        if (isCurrentUser) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            _getStatusIcon(),
-                            size: 14,
-                            color: message.status == MessageStatus.read 
-                                ? const Color(0xFF00BCD4) // Cyan for read
-                                : Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // Message content based on type
+          _buildMessageContent(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageContent(BuildContext context) {
+    // Handle location messages
+    if (message.isLocationMessage) {
+      return Column(
+        crossAxisAlignment: isCurrentUser 
+            ? CrossAxisAlignment.end 
+            : CrossAxisAlignment.start,
+        children: [
+          LocationMessageWidget(
+            message: message,
+            isCurrentUser: isCurrentUser,
+          ),
+          // Message metadata for location messages
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _buildMessageMetadata(),
+          ),
+        ],
+      );
+    }
+
+    // Handle regular text messages
+    return Container(
+      decoration: BoxDecoration(
+        color: isCurrentUser 
+            ? const Color(0xFF1565C0)
+            : Colors.grey[100],
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isCurrentUser ? 16 : 4),
+          bottomRight: Radius.circular(isCurrentUser ? 4 : 16),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Message content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                message.content,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isCurrentUser 
+                      ? Colors.white 
+                      : Colors.black87,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            
+            // Message metadata
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _buildMessageMetadata(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageMetadata() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _formatTime(message.createdAt),
+          style: TextStyle(
+            fontSize: 12,
+            color: isCurrentUser 
+                ? (message.isLocationMessage 
+                    ? Colors.grey[600] 
+                    : Colors.white.withValues(alpha: 0.8))
+                : Colors.grey[600],
+          ),
+        ),
+        if (isCurrentUser) ...[
+          const SizedBox(width: 4),
+          Icon(
+            _getStatusIcon(),
+            size: 14,
+            color: message.status == MessageStatus.read 
+                ? const Color(0xFF00BCD4) // Cyan for read
+                : (message.isLocationMessage 
+                    ? Colors.grey[600]
+                    : Colors.white.withValues(alpha: 0.8)),
+          ),
+        ],
+      ],
     );
   }
 

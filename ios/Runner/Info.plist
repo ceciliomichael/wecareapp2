@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Location permissions for live location sharing -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WeCare needs access to your location to share your current location with employers and helpers. This helps them find the exact work location for better coordination.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>WeCare needs access to your location to share your current location with employers and helpers. This helps them find the exact work location for better coordination.</string>
 </dict>
 </plist>
