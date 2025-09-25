@@ -17,6 +17,7 @@ import '../employer/job_details_screen.dart';
 import '../employer/all_services_screen.dart';
 import '../employer/service_details_screen.dart';
 import '../messaging/conversations_screen.dart';
+import '../shared/completed_jobs_screen.dart';
 
 class EmployerHomeScreen extends StatefulWidget {
   const EmployerHomeScreen({super.key});
@@ -152,6 +153,15 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
     
     // Also schedule a short delayed refresh to catch async updates
     Future.delayed(const Duration(milliseconds: 400), _loadUnreadMessageCount);
+  }
+
+  void _onCompletedJobsTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CompletedJobsScreen(),
+      ),
+    );
   }
 
   void _onPostJob(BuildContext context) async {
@@ -323,12 +333,23 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                           badgeCount: _unreadMessageCount,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          context,
+                          'Completed Jobs',
+                          'Rate your hires',
+                          Icons.history_outlined,
+                          const Color(0xFF10B981),
+                          _onCompletedJobsTap,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildQuickActionCard(
                           context,
                           'Services',
-                          'Browse helper services',
+                          'Browse helpers',
                           Icons.storefront_outlined,
                           const Color(0xFFFF8A50),
                           _onSeeAllServices,

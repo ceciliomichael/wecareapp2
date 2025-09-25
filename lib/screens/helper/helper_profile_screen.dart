@@ -5,6 +5,7 @@ import '../../services/session_service.dart';
 import '../../services/helper_auth_service.dart';
 import '../../services/rating_service.dart';
 import '../../widgets/rating/rating_summary.dart';
+import '../../widgets/ui/profile_picture_widget.dart';
 import '../role_selection_screen.dart';
 import '../rating/user_ratings_screen.dart';
 import 'edit_helper_profile_screen.dart';
@@ -214,25 +215,11 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(40),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.handyman,
-                          size: 40,
-                          color: Color(0xFFFF8A50),
-                        ),
+                      LargeProfilePictureWidget(
+                        profilePictureBase64: _currentHelper!.profilePictureBase64,
+                        fullName: _currentHelper!.fullName,
+                        onTap: _navigateToEditProfile,
+                        showEditIcon: true,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -263,6 +250,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                   [
                     _buildInfoRow('First Name', _currentHelper!.firstName),
                     _buildInfoRow('Last Name', _currentHelper!.lastName),
+                    _buildInfoRow('Age', '${_currentHelper!.age} years old'),
                     _buildInfoRow('Email', _currentHelper!.email),
                     _buildInfoRow('Phone', _currentHelper!.phone),
                     _buildInfoRow('Barangay', _currentHelper!.barangay),

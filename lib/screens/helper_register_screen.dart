@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/forms/custom_text_field.dart';
 import '../widgets/forms/phone_text_field.dart';
 import '../widgets/forms/skills_dropdown.dart';
 import '../widgets/forms/experience_dropdown.dart';
 import '../widgets/forms/barangay_dropdown.dart';
 import '../widgets/forms/file_upload_field.dart';
+import '../widgets/forms/profile_picture_upload_field.dart';
 import '../widgets/forms/terms_agreement_checkbox.dart';
 import '../widgets/common/section_header.dart';
 import '../utils/constants/helper_constants.dart';
@@ -28,6 +30,7 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _ageController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
@@ -36,6 +39,7 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
   String? _selectedBarangay;
   String? _barangayClearanceFileName;
   String? _barangayClearanceBase64;
+  String? _profilePictureBase64;
   bool _agreeToTerms = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -48,6 +52,7 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -170,11 +175,13 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
         lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
         phone: phoneNumber,
+        age: int.parse(_ageController.text.trim()),
         password: _passwordController.text,
         skill: _selectedSkill!,
         experience: _selectedExperience!,
         barangay: _selectedBarangay!,
         barangayClearanceBase64: _barangayClearanceBase64,
+        profilePictureBase64: _profilePictureBase64,
       );
 
       debugPrint('DEBUG: Registration result: ${result['success']}');
@@ -262,6 +269,20 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Profile Picture Section (Optional)
+              const SectionHeader(title: 'Profile Picture (Optional)'),
+
+              ProfilePictureUploadField(
+                currentProfilePictureBase64: _profilePictureBase64,
+                fullName: '${_firstNameController.text} ${_lastNameController.text}',
+                onProfilePictureChanged: (String? newProfilePicture) {
+                  setState(() {
+                    _profilePictureBase64 = newProfilePicture;
+                  });
+                },
+                label: 'Profile Picture (Optional)',
+              ),
+
               // Personal Information Section
               const SectionHeader(title: 'Personal Information'),
 
@@ -284,12 +305,26 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
                 label: 'Email',
                 hint: 'Enter your email address',
                 keyboardType: TextInputType.emailAddress,
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'[A-Z]')),
+                  TextInputFormatter.withFunction((oldValue, newValue) {
+                    return newValue.copyWith(text: newValue.text.toLowerCase());
+                  }),
+                ],
                 validator: FormValidators.validateEmail,
               ),
 
               PhoneTextField(
                 controller: _phoneController,
                 validator: FormValidators.validatePhoneNumber,
+              ),
+
+              CustomTextField(
+                controller: _ageController,
+                label: 'Age',
+                hint: 'Enter your age (18+)',
+                keyboardType: TextInputType.number,
+                validator: FormValidators.validateAge,
               ),
 
               // Skills & Experience Section
@@ -320,9 +355,9 @@ class _HelperRegisterScreenState extends State<HelperRegisterScreen> {
 
               BarangayDropdown(
                 selectedBarangay: _selectedBarangay,
-                barangayList: LocationConstants.boholMunicipalities,
-                label: 'Municipality in Bohol',
-                hint: 'Select Municipality',
+                barangayList: LocationConstants.getSortedLocations(),
+                label: 'Location in Bohol',
+                hint: 'Select your location in Bohol',
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBarangay = value;

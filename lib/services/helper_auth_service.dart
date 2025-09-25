@@ -46,11 +46,13 @@ class HelperAuthService {
     required String lastName,
     required String email,
     required String phone,
+    required int age,
     required String password,
     required String skill,
     required String experience,
     required String barangay,
     String? barangayClearanceBase64,
+    String? profilePictureBase64,
   }) async {
     try {
       // Check if email already exists
@@ -92,11 +94,13 @@ class HelperAuthService {
             'last_name': lastName,
             'email': email,
             'phone': phone,
+            'age': age,
             'password_hash': passwordHash,
             'skill': skill,
             'experience': experience,
             'barangay': barangay,
             'barangay_clearance_base64': barangayClearanceBase64,
+            'profile_picture_base64': profilePictureBase64,
           })
           .select()
           .single();
@@ -190,6 +194,7 @@ class HelperAuthService {
     String? experience,
     String? barangay,
     String? barangayClearanceBase64,
+    String? profilePictureBase64,
   }) async {
     try {
       final updateData = <String, dynamic>{};
@@ -200,6 +205,7 @@ class HelperAuthService {
       if (experience != null) updateData['experience'] = experience;
       if (barangay != null) updateData['barangay'] = barangay;
       if (barangayClearanceBase64 != null) updateData['barangay_clearance_base64'] = barangayClearanceBase64;
+      if (profilePictureBase64 != null) updateData['profile_picture_base64'] = profilePictureBase64;
 
       if (updateData.isEmpty) {
         return {
@@ -226,6 +232,36 @@ class HelperAuthService {
       return {
         'success': false,
         'message': 'Update failed: $e',
+      };
+    }
+  }
+
+  // Update profile picture only
+  static Future<Map<String, dynamic>> updateProfilePicture({
+    required String id,
+    String? profilePictureBase64,
+  }) async {
+    try {
+      final response = await SupabaseService.client
+          .from(_tableName)
+          .update({'profile_picture_base64': profilePictureBase64})
+          .eq('id', id)
+          .select()
+          .single();
+
+      final helper = Helper.fromMap(response);
+
+      return {
+        'success': true,
+        'message': profilePictureBase64 != null 
+            ? 'Profile picture updated successfully'
+            : 'Profile picture removed successfully',
+        'helper': helper,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Profile picture update failed: $e',
       };
     }
   }

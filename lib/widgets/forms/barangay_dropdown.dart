@@ -22,7 +22,7 @@ class BarangayDropdown extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label ?? 'Barangay in Tagbilaran City',
+          label ?? 'Location in Bohol',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -41,7 +41,7 @@ class BarangayDropdown extends StatelessWidget {
             child: DropdownButton<String>(
               value: selectedBarangay,
               hint: Text(
-                hint ?? 'Select Barangay',
+                hint ?? 'Select Location',
                 style: const TextStyle(color: Color(0xFF9E9E9E)),
               ),
               icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1565C0)),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/employer.dart';
 import '../../services/session_service.dart';
 import '../../services/employer_auth_service.dart';
+import '../../widgets/ui/profile_picture_widget.dart';
 import '../role_selection_screen.dart';
 import 'edit_employer_profile_screen.dart';
 import 'employer_subscription_screen.dart';
@@ -192,25 +193,11 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(40),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Color(0xFF1565C0),
-                        ),
+                      LargeProfilePictureWidget(
+                        profilePictureBase64: _currentEmployer!.profilePictureBase64,
+                        fullName: _currentEmployer!.fullName,
+                        onTap: _navigateToEditProfile,
+                        showEditIcon: true,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -241,6 +228,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                   [
                     _buildInfoRow('First Name', _currentEmployer!.firstName),
                     _buildInfoRow('Last Name', _currentEmployer!.lastName),
+                    _buildInfoRow('Age', '${_currentEmployer!.age} years old'),
                     _buildInfoRow('Email', _currentEmployer!.email),
                     _buildInfoRow('Phone', _currentEmployer!.phone),
                     _buildInfoRow('Barangay', _currentEmployer!.barangay),

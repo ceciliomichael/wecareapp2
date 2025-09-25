@@ -7,6 +7,7 @@ import '../../widgets/forms/skills_dropdown.dart';
 import '../../widgets/forms/experience_dropdown.dart';
 import '../../widgets/forms/barangay_dropdown.dart';
 import '../../widgets/forms/file_upload_field.dart';
+import '../../widgets/forms/profile_picture_upload_field.dart';
 import '../../services/file_picker_service.dart';
 import '../../utils/constants/helper_constants.dart';
 import '../../utils/constants/barangay_constants.dart';
@@ -34,6 +35,7 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
   String? _selectedBarangay;
   String? _barangayClearanceFileName;
   String? _barangayClearanceBase64;
+  String? _profilePictureBase64;
   bool _isLoading = false;
   bool _hasChanges = false;
 
@@ -50,6 +52,7 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
     _selectedExperience = widget.helper.experience;
     _selectedBarangay = widget.helper.barangay;
     _barangayClearanceBase64 = widget.helper.barangayClearanceBase64;
+    _profilePictureBase64 = widget.helper.profilePictureBase64;
     
     // Add listeners to detect changes
     _firstNameController.addListener(_onFieldChanged);
@@ -128,6 +131,9 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
             : null,
         barangayClearanceBase64: _barangayClearanceBase64 != widget.helper.barangayClearanceBase64 
             ? _barangayClearanceBase64 
+            : null,
+        profilePictureBase64: _profilePictureBase64 != widget.helper.profilePictureBase64 
+            ? _profilePictureBase64 
             : null,
       );
 
@@ -268,6 +274,23 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
 
               const SizedBox(height: 32),
 
+              // Profile Picture Section
+              _buildSectionHeader('Profile Picture'),
+              const SizedBox(height: 16),
+
+              ProfilePictureUploadField(
+                currentProfilePictureBase64: _profilePictureBase64,
+                fullName: widget.helper.fullName,
+                onProfilePictureChanged: (String? newProfilePicture) {
+                  setState(() {
+                    _profilePictureBase64 = newProfilePicture;
+                    _hasChanges = true;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 24),
+
               // Personal Information Section
               _buildSectionHeader('Personal Information'),
               const SizedBox(height: 16),
@@ -331,9 +354,9 @@ class _EditHelperProfileScreenState extends State<EditHelperProfileScreen> {
 
               BarangayDropdown(
                 selectedBarangay: _selectedBarangay,
-                barangayList: LocationConstants.boholMunicipalities,
-                label: 'Municipality in Bohol',
-                hint: 'Select Municipality',
+                barangayList: LocationConstants.getSortedLocations(),
+                label: 'Location in Bohol',
+                hint: 'Select your location in Bohol',
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBarangay = value;

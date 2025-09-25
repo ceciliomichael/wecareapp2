@@ -10,7 +10,11 @@ class FormValidators {
     if (value == null || value.isEmpty) {
       return 'Please enter your email';
     }
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+    
+    // Convert to lowercase for validation
+    String email = value.toLowerCase();
+    
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       return 'Please enter a valid email';
     }
     return null;
@@ -48,6 +52,27 @@ class FormValidators {
     if (value != password) {
       return 'Passwords do not match';
     }
+    return null;
+  }
+
+  static String? validateAge(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your age';
+    }
+    
+    final age = int.tryParse(value);
+    if (age == null) {
+      return 'Please enter a valid age';
+    }
+    
+    if (age < 18) {
+      return 'You must be at least 18 years old to register';
+    }
+    
+    if (age > 100) {
+      return 'Please enter a valid age';
+    }
+    
     return null;
   }
 }

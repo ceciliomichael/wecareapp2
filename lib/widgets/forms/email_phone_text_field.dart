@@ -204,6 +204,12 @@ class _EmailPhoneTextFieldState extends State<EmailPhoneTextField> {
       child: TextFormField(
         controller: widget.controller,
         keyboardType: TextInputType.emailAddress,
+        inputFormatters: [
+          FilteringTextInputFormatter.deny(RegExp(r'[A-Z]')),
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            return newValue.copyWith(text: newValue.text.toLowerCase());
+          }),
+        ],
         validator: widget.validator,
         decoration: InputDecoration(
           hintText: 'Enter your email address',

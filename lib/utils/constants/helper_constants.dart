@@ -9,7 +9,7 @@ class HelperConstants {
   ];
 
   static const List<String> experienceLevels = [
-    'Less than 1',
+    'Less than 1 year',
     '1-2',
     '3-5',
     '5-10',

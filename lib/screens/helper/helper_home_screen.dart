@@ -16,6 +16,7 @@ import '../helper/apply_job_screen.dart';
 import '../helper/post_service_screen.dart';
 import '../helper/edit_service_screen.dart';
 import '../messaging/conversations_screen.dart';
+import '../shared/completed_jobs_screen.dart';
 
 class HelperHomeScreen extends StatefulWidget {
   const HelperHomeScreen({super.key});
@@ -156,6 +157,15 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
     
     // Also schedule a short delayed refresh to catch async updates
     Future.delayed(const Duration(milliseconds: 400), _loadUnreadMessageCount);
+  }
+
+  void _onCompletedJobsTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CompletedJobsScreen(),
+      ),
+    );
   }
 
   void _onPostService(BuildContext context) {
@@ -422,18 +432,11 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                     Expanded(
                       child: _buildQuickActionCard(
                         context,
-                        'Update Skills',
-                        'Add new skills to your profile',
-                        Icons.star_outline,
-                        const Color(0xFF3B82F6),
-                        () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Update Skills - Coming Soon'),
-                              backgroundColor: Color(0xFF3B82F6),
-                            ),
-                          );
-                        },
+                        'Completed Jobs',
+                        'Rate your past experiences',
+                        Icons.history_outlined,
+                        const Color(0xFF10B981),
+                        _onCompletedJobsTap,
                       ),
                     ),
                   ],
