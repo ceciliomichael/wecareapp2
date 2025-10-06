@@ -69,6 +69,7 @@ class JobPostingService {
   /// Mark job as completed
   static Future<JobPosting> markJobAsCompleted(String jobId) async {
     try {
+      // Update the job status to completed
       final response = await SupabaseService.client
           .from(_tableName)
           .update({
@@ -78,6 +79,14 @@ class JobPostingService {
           .eq('id', jobId)
           .select()
           .single();
+
+      // Also update the accepted application status to completed
+      // This allows users to rate each other after job completion
+      await SupabaseService.client
+          .from('applications')
+          .update({'status': 'completed'})
+          .eq('job_posting_id', jobId)
+          .eq('status', 'accepted');
 
       return JobPosting.fromMap(response);
     } catch (e) {

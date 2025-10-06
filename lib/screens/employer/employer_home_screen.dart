@@ -14,6 +14,7 @@ import '../../widgets/subscription/subscription_status_banner.dart';
 import '../employer/employer_subscription_screen.dart';
 import '../employer/post_job_screen.dart';
 import '../employer/job_details_screen.dart';
+import '../employer/active_jobs_screen.dart';
 import '../employer/all_services_screen.dart';
 import '../employer/service_details_screen.dart';
 import '../messaging/conversations_screen.dart';
@@ -160,6 +161,15 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const CompletedJobsScreen(),
+      ),
+    );
+  }
+
+  void _onActiveJobsTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ActiveJobsScreen(),
       ),
     );
   }
@@ -317,7 +327,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
 
                 const SizedBox(height: 16),
 
-                // Quick Action Cards
+                // Quick Action Cards - Row 1
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
@@ -333,28 +343,40 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                           badgeCount: _unreadMessageCount,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: _buildQuickActionCard(
                           context,
-                          'Completed Jobs',
-                          'Rate your hires',
+                          'Active Jobs',
+                          'Mark complete',
+                          Icons.work_outline,
+                          const Color(0xFF3B82F6),
+                          _onActiveJobsTap,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Quick Action Cards - Row 2
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          context,
+                          'Completed',
+                          'Rate past hires',
                           Icons.history_outlined,
                           const Color(0xFF10B981),
                           _onCompletedJobsTap,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          context,
-                          'Services',
-                          'Browse helpers',
-                          Icons.storefront_outlined,
-                          const Color(0xFFFF8A50),
-                          _onSeeAllServices,
-                        ),
-                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(child: SizedBox()), // Empty space for symmetry
                     ],
                   ),
                 ),

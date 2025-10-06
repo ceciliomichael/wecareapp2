@@ -51,6 +51,9 @@ class _RecentJobsWidgetState extends State<RecentJobsWidget> {
         JobPostingService.getTodaysJobPostings(),
       ]);
 
+      print('🔍 [Recent Jobs] Loaded ${results[0].length} recent jobs');
+      print('🔍 [Recent Jobs] Loaded ${results[1].length} today\'s jobs');
+
       if (mounted) {
         setState(() {
           _recentJobs = results[0];
@@ -59,6 +62,7 @@ class _RecentJobsWidgetState extends State<RecentJobsWidget> {
         });
       }
     } catch (e) {
+      print('❌ [Recent Jobs] Error: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load recent jobs: $e';

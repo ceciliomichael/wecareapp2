@@ -15,11 +15,17 @@ import '../helper/helper_subscription_screen.dart';
 import '../helper/apply_job_screen.dart';
 import '../helper/post_service_screen.dart';
 import '../helper/edit_service_screen.dart';
+import '../helper/helper_active_jobs_screen.dart';
 import '../messaging/conversations_screen.dart';
 import '../shared/completed_jobs_screen.dart';
 
 class HelperHomeScreen extends StatefulWidget {
-  const HelperHomeScreen({super.key});
+  final VoidCallback? onNavigateToFindJobs;
+
+  const HelperHomeScreen({
+    super.key,
+    this.onNavigateToFindJobs,
+  });
 
   @override
   State<HelperHomeScreen> createState() => _HelperHomeScreenState();
@@ -164,6 +170,15 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const CompletedJobsScreen(),
+      ),
+    );
+  }
+
+  void _onActiveJobsTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HelperActiveJobsScreen(),
       ),
     );
   }
@@ -412,7 +427,7 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
 
               const SizedBox(height: 16),
 
-              // Quick Action Cards
+              // Quick Action Cards - Row 1
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -432,13 +447,36 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                     Expanded(
                       child: _buildQuickActionCard(
                         context,
-                        'Completed Jobs',
-                        'Rate your past experiences',
+                        'Active Jobs',
+                        'Mark complete',
+                        Icons.work_outline,
+                        const Color(0xFF3B82F6),
+                        _onActiveJobsTap,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Quick Action Cards - Row 2
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        context,
+                        'Completed',
+                        'Rate past jobs',
                         Icons.history_outlined,
                         const Color(0xFF10B981),
                         _onCompletedJobsTap,
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    const Expanded(child: SizedBox()), // Empty space for symmetry
                   ],
                 ),
               ),
@@ -458,14 +496,9 @@ class _HelperHomeScreenState extends State<HelperHomeScreen> {
                 child: SectionHeader(
                   title: 'Latest Job Opportunities',
                   subtitle: 'Explore all available job postings',
-                  onSeeAll: _matchedJobs.isNotEmpty ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('View All Jobs - Coming Soon'),
-                        backgroundColor: Color(0xFFFF8A50),
-                      ),
-                    );
-                  } : null,
+                  onSeeAll: _matchedJobs.isNotEmpty 
+                      ? widget.onNavigateToFindJobs 
+                      : null,
                 ),
               ),
 

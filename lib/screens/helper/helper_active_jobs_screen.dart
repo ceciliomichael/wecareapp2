@@ -30,11 +30,18 @@ class _HelperActiveJobsScreenState extends State<HelperActiveJobsScreen> {
 
     try {
       final currentUserId = await SessionService.getCurrentUserId();
+      print('🔍 [Helper Active Jobs] Current User ID: $currentUserId');
+      
       if (currentUserId == null) {
         throw Exception('User session not found');
       }
 
       final jobs = await JobPostingService.getInProgressJobsForHelper(currentUserId);
+      print('🔍 [Helper Active Jobs] Found ${jobs.length} jobs');
+      
+      for (var job in jobs) {
+        print('   - Job: ${job.title}, Status: ${job.status}, Helper ID: ${job.assignedHelperId}');
+      }
       
       if (mounted) {
         setState(() {
@@ -43,6 +50,7 @@ class _HelperActiveJobsScreenState extends State<HelperActiveJobsScreen> {
         });
       }
     } catch (e) {
+      print('❌ [Helper Active Jobs] Error: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load active jobs: $e';
